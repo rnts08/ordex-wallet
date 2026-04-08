@@ -1,12 +1,15 @@
-version: '3.8'
-
 services:
   ordexcoind:
-    image: ordexnetwork/ordexcoind:latest
+    build:
+      context: ..
+      dockerfile: docker/daemon.Dockerfile
+      args:
+        - DAEMON_NAME=ordexcoind
+        - DAEMON_BIN=ordexcoind
     container_name: ordexcoind
     volumes:
       - ordexcoin_data:/root/.ordexcoin
-      - ./bin:/bin:ro
+      - config_data:/config
     ports:
       - "25173:25173"
       - "9333:9333"
@@ -19,11 +22,16 @@ services:
       retries: 3
 
   ordexgoldd:
-    image: ordexnetwork/ordexgoldd:latest
+    build:
+      context: ..
+      dockerfile: docker/daemon.Dockerfile
+      args:
+        - DAEMON_NAME=ordexgoldd
+        - DAEMON_BIN=ordexgoldd
     container_name: ordexgoldd
     volumes:
       - ordexgold_data:/root/.ordexgold
-      - ./bin:/bin:ro
+      - config_data:/config
     ports:
       - "25466:25466"
       - "9334:9334"
@@ -54,9 +62,9 @@ services:
       - FLASK_ENV=production
     depends_on:
       ordexcoind:
-        condition: service_healthy
+        condition: service_started
       ordexgoldd:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
 volumes:
