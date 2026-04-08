@@ -1,6 +1,6 @@
 Source-Available Non-Commercial License
 
-Copyright (c) 2026 ORDEX PROTOCOL
+Copyright (c) 2026 ORDEX PROTOCOL / Timh Bergstrom
 
 Permission is hereby granted to any person obtaining a copy of this software and associated documentation files (the "Software") to use, copy, modify, and distribute the Software for non-commercial purposes only, subject to the following conditions:
 

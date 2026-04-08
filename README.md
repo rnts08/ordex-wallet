@@ -2,6 +2,56 @@
 
 A custodial web wallet for OrdexNetwork - run your own self-hosted wallet for OrdexCoin (OXC) and OrdexGold (OXG).
 
+## Quick Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/rnts08/ordex-wallet.git
+cd ordex-wallet
+```
+
+### 2. Checkout Specific Version (Recommended)
+
+```bash
+# Checkout the latest stable release
+git checkout v1.0.0
+
+# Or checkout the main branch for development
+git checkout main
+```
+
+### 3. Download Daemon Binaries
+
+```bash
+# Create bin directory if it doesn't exist
+mkdir -p bin
+
+# Download and setup OrdexCoin daemon
+wget https://github.com/OrdexCoin/Ordexcoin-Core/releases/download/V.25.0/ordexcoin-25.0-linux.tar.gz
+tar -xzf ordexcoin-25.0-linux.tar.gz
+mv ordexcoin-25.0/bin/ordexcoind bin/ordexcoind
+chmod +x bin/ordexcoind
+
+# Download and setup OrdexGold daemon  
+wget https://github.com/OrdexCoin/OrdexGold-Core/releases/download/V.0.21.04/ordexgold-0.21.4-linux.tar.gz
+tar -xzf ordexgold-0.21.4-linux.tar.gz
+mv ordexgold-0.21.4/bin/ordexgoldd bin/ordexgoldd
+chmod +x bin/ordexgoldd
+
+# Clean up downloaded archives
+rm ordexcoin-25.0-linux.tar.gz ordexgold-0.21.4-linux.tar.gz
+```
+
+### 4. Start the Wallet
+
+```bash
+cd docker
+docker compose up -d
+```
+
+The wallet will be available at `http://localhost:15000`
+
 ## Features
 
 - **Dashboard**: Real-time balance display for OXC and OXG, network sync status, recent transactions
