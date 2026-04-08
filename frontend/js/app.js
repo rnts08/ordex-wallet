@@ -149,6 +149,12 @@ async function loadRecentTransactions() {
 }
 
 // Wallet Setup
+function showCreateWallet() {
+    showPage('wallet');
+    showWalletTab('backup');
+    document.getElementById('create-wallet-section').classList.remove('hidden');
+}
+
 async function createWallet() {
     const passphrase = document.getElementById('create-passphrase').value;
     
@@ -194,6 +200,18 @@ async function importWallet() {
 async function loadWalletData() {
     try {
         const info = await ApiService.getWalletInfo();
+        
+        if (!info.has_wallet) {
+            // Show no wallet message
+            document.getElementById('wallet-oxc-balance').innerHTML = 
+                '<span class="text-muted">No wallet</span>';
+            document.getElementById('wallet-oxg-balance').innerHTML = 
+                '<span class="text-muted">No wallet</span>';
+            document.getElementById('wallet-no-wallet').classList.remove('hidden');
+            return;
+        }
+        
+        document.getElementById('wallet-no-wallet')?.classList.add('hidden');
         
         document.getElementById('wallet-oxc-balance').innerHTML = 
             `${UI.formatAmount(info.ordexcoin.balance)} <span class="balance-symbol">OXC</span>`;
@@ -484,3 +502,4 @@ window.showSystemTab = showSystemTab;
 window.saveDaemonConfig = saveDaemonConfig;
 window.handleConsoleKeypress = handleConsoleKeypress;
 window.executeConsoleCommand = executeConsoleCommand;
+window.copyToClipboard = UI.copyToClipboard;

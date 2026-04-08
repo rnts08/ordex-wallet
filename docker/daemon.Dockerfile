@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM debian:unstable-slim
 
 ARG DAEMON_NAME
 ARG DAEMON_BIN
@@ -16,6 +16,6 @@ RUN mkdir -p /config /root/.ordexcoin /root/.ordexgold
 
 ENV DAEMON_NAME=${DAEMON_NAME}
 
-EXPOSE 25173 25466 9333 9334
+EXPOSE 17523 17524 19333 19334
 
-CMD ["echo", "Daemon ${DAEMON_NAME} ready. Use docker-compose to start the full application."]
+CMD ["echo", "Daemon ${DAEMON_NAME} ready"]

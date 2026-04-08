@@ -18,9 +18,17 @@ logger = logging.getLogger(__name__)
 class ConfigGenerator:
     """Handles automatic generation of configuration files with secure credentials."""
 
-    DEFAULT_RPC_PORTS = {"ordexcoind": 25173, "ordexgoldd": 25466}
+    DEFAULT_RPC_PORTS = {
+        "ordexcoind": int(os.environ.get("ORDEXCOIND_RPC_PORT", "25173")),
+        "ordexgoldd": int(os.environ.get("ORDEXGOLDD_RPC_PORT", "25466")),
+    }
 
     DEFAULT_P2P_PORTS = {"ordexcoind": 9333, "ordexgoldd": 9334}
+
+    DEFAULT_P2P_PORTS = {
+        "ordexcoind": int(os.environ.get("ORDEXCOIND_P2P_PORT", "9333")),
+        "ordexgoldd": int(os.environ.get("ORDEXGOLDD_P2P_PORT", "9334")),
+    }
 
     def __init__(self, config_dir: str, data_dir: str):
         """
@@ -42,8 +50,8 @@ class ConfigGenerator:
 
     @staticmethod
     def generate_secure_password(length: int = 32) -> str:
-        """Generate a cryptographically secure password."""
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        """Generate a cryptographically secure password (safe for config files)."""
+        alphabet = string.ascii_letters + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(length))
 
     @staticmethod
@@ -60,7 +68,14 @@ class ConfigGenerator:
         rpc_port = self.DEFAULT_RPC_PORTS.get(daemon_name, 8332)
         p2p_port = self.DEFAULT_P2P_PORTS.get(daemon_name, 8333)
 
+        datadir = (
+            "/data/blockchain/ordexcoin"
+            if daemon_name == "ordexcoind"
+            else "/data/blockchain/ordexgold"
+        )
+
         return {
+            "datadir": datadir,
             "rpcuser": creds["rpcuser"],
             "rpcpassword": creds["rpcpassword"],
             "rpcport": rpc_port,

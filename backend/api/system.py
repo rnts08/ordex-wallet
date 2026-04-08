@@ -5,6 +5,7 @@ Handles system stats, logs, config management, and health checks.
 """
 
 import os
+import time
 import psutil
 import logging
 from flask import Blueprint, request, jsonify, current_app
@@ -38,7 +39,7 @@ def health_check():
                     "ordexgoldd": ordexgoldd_connected,
                 },
                 "wallet_ready": has_wallet,
-                "timestamp": int(os.times().real * 1000),
+                "timestamp": int(time.time() * 1000),
             }
         )
 

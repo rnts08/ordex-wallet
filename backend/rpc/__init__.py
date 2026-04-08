@@ -5,6 +5,7 @@ Provides secure communication with ordexcoind and ordexgoldd daemons.
 """
 
 import logging
+import json
 from typing import Any, Dict, Optional, List, Union
 from dataclasses import dataclass
 import requests
@@ -60,6 +61,10 @@ class OrdexRPCClient:
         self.url = f"http://{host}:{port}"
 
         self.session = requests.Session()
+
+        # Debug: log session settings
+        logger.debug(f"RPC session created for {self.daemon_name}")
+
         retry_strategy = Retry(
             total=self.MAX_RETRIES,
             backoff_factor=self.RETRY_BACKOFF_FACTOR,
@@ -78,8 +83,11 @@ class OrdexRPCClient:
         return None
 
     def call(self, method: str, *args, **kwargs) -> Any:
+        import socket
+        import base64
+
         payload = {
-            "jsonrpc": "2.0",
+            "jsonrpc": "1.0",
             "method": method,
             "params": list(args) if args else [],
             "id": 1,
@@ -87,67 +95,127 @@ class OrdexRPCClient:
 
         timeout = kwargs.get("timeout", self.timeout)
 
-        try:
-            response = self.session.post(
-                self.url,
-                json=payload,
-                auth=self._build_auth(),
-                timeout=timeout,
-                headers={"Content-Type": "application/json"},
-            )
-            response.raise_for_status()
-            result = response.json()
+        logger.info(f"RPC call: {self.daemon_name} {method}")
 
-            if "error" in result and result["error"]:
-                error = result["error"]
-                raise RPCError(
-                    code=error.get("code", -1),
-                    message=error.get("message", "Unknown error"),
-                )
+        body = json.dumps(payload)
 
-            return result.get("result")
+        last_error = None
+        for attempt in range(5):
+            try:
+                # Create socket connection directly
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(timeout)
+                sock.connect((self.host, self.port))
 
-        except requests.exceptions.Timeout as e:
-            logger.error(f"RPC timeout calling {method}: {e}")
-            raise RPCConnectionError(f"Request timed out: {e}")
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"RPC connection error calling {method}: {e}")
-            raise RPCConnectionError(f"Connection failed: {e}")
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"RPC HTTP error calling {method}: {e}")
-            raise RPCConnectionError(f"HTTP error: {e}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"RPC request error calling {method}: {e}")
-            raise RPCConnectionError(f"Request failed: {e}")
+                # Build HTTP request manually
+                auth_str = base64.b64encode(
+                    f"{self.user}:{self.password}".encode()
+                ).decode()
+                request = f"POST / HTTP/1.1\r\nHost: {self.host}\r\nAuthorization: Basic {auth_str}\r\nContent-Type: application/json\r\nContent-Length: {len(body)}\r\n\r\n{body}"
+
+                sock.send(request.encode())
+
+                # Read response
+                response = b""
+                while True:
+                    chunk = sock.recv(4096)
+                    if not chunk:
+                        break
+                    response += chunk
+                    # Check if we have complete response (has double newline and content-length if POST)
+                    if b"\r\n\r\n" in response:
+                        break
+
+                sock.close()
+
+                # Parse HTTP response
+                if not response:
+                    raise RPCConnectionError("Empty response")
+
+                # Extract body after headers
+                body_start = response.find(b"\r\n\r\n")
+                if body_start == -1:
+                    raise RPCConnectionError("Invalid response format")
+
+                body_str = response[body_start + 4 :].decode()
+
+                # Parse JSON
+                result = json.loads(body_str)
+
+                if "error" in result and result["error"]:
+                    raise RPCError(
+                        code=result["error"].get("code", -1),
+                        message=result["error"].get("message", "Unknown error"),
+                    )
+
+                return result.get("result")
+
+            except Exception as e:
+                last_error = e
+                if attempt < 4:
+                    logger.warning(
+                        f"RPC attempt {attempt + 1} failed for {method}, retrying: {e}"
+                    )
+                    import time
+
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                break
+
+        # All attempts failed
+        logger.error(f"RPC error calling {method} after 5 attempts: {last_error}")
+        raise RPCConnectionError(f"Request failed: {last_error}")
 
     def getinfo(self) -> Dict[str, Any]:
-        return self.call("getinfo")
+        return self.call("getblockchaininfo")
+
+    def getblockchaininfo(self) -> Dict[str, Any]:
+        return self.call("getblockchaininfo")
 
     def getblockcount(self) -> int:
         return self.call("getblockcount")
+
+    def getwalletinfo(self) -> Dict[str, Any]:
+        return self.call("getwalletinfo")
+
+    def listwallets(self) -> List[str]:
+        return self.call("listwallets")
+
+    def loadwallet(self, name: str) -> Dict[str, Any]:
+        return self.call("loadwallet", name)
+
+    def createwallet(self, name: str) -> Dict[str, Any]:
+        return self.call("createwallet", name)
 
     def getbalance(self, account: str = "", minconf: int = 1) -> float:
         if account:
             return self.call("getbalance", account, minconf)
         return self.call("getbalance")
 
-    def getnewaddress(self, account: str = "", address_type: str = "p2pkh") -> str:
+    def getnewaddress(self, account: str = "", address_type: str = "bech32") -> str:
         if account:
             return self.call("getnewaddress", account, address_type)
         return self.call("getnewaddress")
 
-    def getaddressesbyaccount(self, account: str = "") -> List[str]:
-        return self.call("getaddressesbyaccount", account)
-
-    def getaccountaddress(self, account: str = "") -> str:
-        return self.call("getaccountaddress", account)
+    def getaddressbyaccount(self, account: str = "") -> str:
+        return self.call("getaddressbyaccount", account)
 
     def validateaddress(self, address: str) -> Dict[str, Any]:
         return self.call("validateaddress", address)
 
+    def listreceivedbyaddress(
+        self,
+        minconf: int = 1,
+        include_empty: bool = False,
+        include_watchonly: bool = False,
+    ) -> List[Dict[str, Any]]:
+        return self.call(
+            "listreceivedbyaddress", minconf, include_empty, include_watchonly
+        )
+
     def listtransactions(
         self,
-        account: str = "",
+        account: str = "*",
         count: int = 10,
         skip: int = 0,
         include_watchonly: bool = False,

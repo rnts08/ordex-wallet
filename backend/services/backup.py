@@ -26,7 +26,10 @@ class BackupService:
 
     def create_backup(self, passphrase: str = "") -> str:
         """Create an encrypted backup of the wallet."""
+        import uuid
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = uuid.uuid4().hex[:8]
 
         backup_data = {
             "version": "1.0",
@@ -45,9 +48,9 @@ class BackupService:
             encoded = base64.b64encode(json.dumps(backup_data).encode()).decode()
             encrypted = self._xor_encrypt(encoded, key)
 
-            filename = f"ordexwallet_backup_{timestamp}.enc"
+            filename = f"ordexwallet_backup_{timestamp}_{unique_id}.enc"
         else:
-            filename = f"ordexwallet_backup_{timestamp}.json"
+            filename = f"ordexwallet_backup_{timestamp}_{unique_id}.json"
             encrypted = json.dumps(backup_data)
 
         backup_path = self.backup_dir / filename

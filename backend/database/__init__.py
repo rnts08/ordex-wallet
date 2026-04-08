@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class Database:
     """SQLite database manager for OrdexWallet."""
 
+    SCHEMA_VERSION = 1
+
     def __init__(self, db_path: str):
         """Initialize database connection."""
         self.db_path = db_path
@@ -51,8 +53,59 @@ class Database:
             logger.error(f"Database error: {e}")
             raise e
 
+    def is_first_startup(self) -> bool:
+        """Check if this is the first startup (database needs initialization)."""
+        with self.get_cursor() as cursor:
+            # Check if schema version is set
+            cursor.execute("SELECT value FROM settings WHERE key = 'schema_version'")
+            row = cursor.fetchone()
+            if row is None:
+                return True
+            return False
+
+    def initialize(self) -> bool:
+        """Initialize or migrate database. Returns True if initialization occurred."""
+        with self.get_cursor() as cursor:
+            # Check current schema version
+            cursor.execute("SELECT value FROM settings WHERE key = 'schema_version'")
+            row = cursor.fetchone()
+
+            if row is None:
+                # Fresh database - run initialization
+                logger.info("Running database initialization...")
+                self._init_tables()
+
+                # Set schema version
+                cursor.execute(
+                    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                    ("schema_version", str(self.SCHEMA_VERSION)),
+                )
+
+                # Set initialized timestamp
+                cursor.execute(
+                    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                    ("initialized_at", datetime.now().isoformat()),
+                )
+
+                logger.info("Database initialization complete")
+                return True
+            else:
+                current_version = int(row["value"])
+                if current_version < self.SCHEMA_VERSION:
+                    logger.info(
+                        f"Running database migration from v{current_version} to v{self.SCHEMA_VERSION}"
+                    )
+                    # Future: run migrations here
+                    cursor.execute(
+                        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                        ("schema_version", str(self.SCHEMA_VERSION)),
+                    )
+                    return True
+
+        return False
+
     def _init_tables(self):
-        """Initialize database tables."""
+        """Initialize database tables (idempotent)."""
         with self.get_cursor() as cursor:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS settings (
@@ -369,6 +422,14 @@ class DatabaseManager:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.main_db = Database(str(self.data_dir / "ordexwallet.db"))
+
+        # Initialize database (idempotent - runs on every start)
+        initialized = self.main_db.initialize()
+        if initialized:
+            logger.info("Database initialized for first time")
+        else:
+            logger.info("Database already initialized")
+
         logger.info("DatabaseManager initialized")
 
     def get_db(self) -> Database:

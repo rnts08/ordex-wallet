@@ -11,7 +11,7 @@
         <div class="container">
             <div class="header-content">
                 <a href="#" class="logo" onclick="showPage('dashboard')">
-                    <div class="logo-icon">O</div>
+                    <img src="ordexnetwork.png" alt="OrdexNetwork" class="logo-img">
                     <span class="logo-text">OrdexWallet</span>
                 </a>
                 <nav id="main-nav">
@@ -19,6 +19,7 @@
                     <a href="#wallet" onclick="showPage('wallet')">Wallet</a>
                     <a href="#transactions" onclick="showPage('transactions')">Transactions</a>
                     <a href="#system" onclick="showPage('system')">System</a>
+                    <a href="#about" onclick="showPage('about')">About</a>
                     <a href="#settings" onclick="showPage('settings')">Settings</a>
                 </nav>
             </div>
@@ -142,6 +143,13 @@
                 </div>
                 
                 <div id="wallet-overview" class="wallet-tab">
+                    <div id="wallet-no-wallet" class="card mb-2">
+                        <div class="text-center" style="padding: 40px 20px;">
+                            <p class="text-muted mb-2">No wallet found</p>
+                            <button class="btn btn-primary" onclick="showCreateWallet()">Create New Wallet</button>
+                        </div>
+                    </div>
+                    
                     <div class="grid grid-2 mb-2">
                         <div class="card">
                             <div class="card-title mb-1">OrdexCoin Balance</div>
@@ -381,6 +389,100 @@
                         <div id="audit-logs" class="tx-list">
                             <div class="loading"><div class="spinner"></div></div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Page -->
+            <div id="about" class="page hidden">
+                <h1 class="page-title">About OrdexWallet</h1>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">License</span>
+                    </div>
+                    <div class="license-content">
+                        <h3>Source-Available Non-Commercial License</h3>
+                        <p class="text-muted">Copyright (c) 2026 ORDEX PROTOCOL</p>
+                        
+                        <p>Permission is hereby granted to any person obtaining a copy of this software and associated documentation files (the "Software") to use, copy, modify, and distribute the Software for non-commercial purposes only, subject to the following conditions:</p>
+                        
+                        <ol>
+                            <li>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</li>
+                            <li>The Software may not be used, in whole or in part, for any commercial purpose without prior written permission from the copyright holder.</li>
+                            <li>If you modify, use, or build upon the Software, you must provide clear attribution to the original work.</li>
+                        </ol>
+                        
+                        <p class="text-muted"><strong>Commercial Use Restriction:</strong> All rights to use the Software for commercial purposes are reserved exclusively by ORDEX PROTOCOL.</p>
+                        
+                        <p class="text-muted"><strong>Disclaimer:</strong> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.</p>
+                    </div>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Support the Project</span>
+                    </div>
+                    <p class="mb-2">This project is done in my spare time and will be available for free, so donating and supporting the project will help me finish and polish it to a working and stable point.</p>
+                    
+                    <div class="support-section">
+                        <h4>Fiat & Crypto</h4>
+                        <div class="donation-list">
+                            <div class="donation-item">
+                                <span class="donation-label">BTC:</span>
+                                <code class="donation-address">bc1qkmzc6d49fl0edyeynezwlrfqv486nmk6p5pmta</code>
+                                <button class="copy-btn" onclick="copyToClipboard('bc1qkmzc6d49fl0edyeynezwlrfqv486nmk6p5pmta')">Copy</button>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">ERC-20:</span>
+                                <code class="donation-address">0xC13D012CdAae7978CAa0Ef5B1E30ac6e65e6b17F</code>
+                                <button class="copy-btn" onclick="copyToClipboard('0xC13D012CdAae7978CAa0Ef5B1E30ac6e65e6b17F')">Copy</button>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">LTC:</span>
+                                <code class="donation-address">ltc1q0ahxru7nwgey64agffr7x89swekj7sz8stqc6x</code>
+                                <button class="copy-btn" onclick="copyToClipboard('ltc1q0ahxru7nwgey64agffr7x89swekj7sz8stqc6x')">Copy</button>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">SOL:</span>
+                                <code class="donation-address">HB2o6q6vsW5796U5y7NxNqA7vYZW1vuQjpAHDo7FAMG8</code>
+                                <button class="copy-btn" onclick="copyToClipboard('HB2o6q6vsW5796U5y7NxNqA7vYZW1vuQjpAHDo7FAMG8')">Copy</button>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">XRP:</span>
+                                <code class="donation-address">rUW7Q64vR4PwDM3F27etd6ipxK8MtuxsFs</code>
+                                <button class="copy-btn" onclick="copyToClipboard('rUW7Q64vR4PwDM3F27etd6ipxK8MtuxsFs')">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="support-section">
+                        <h4>OrdexNetwork Tokens</h4>
+                        <p class="text-small text-muted mb-1">To help test and verify the implementation with ordexnetwork, you can help by donating tokens for use in the development and testing effort.</p>
+                        <div class="donation-list">
+                            <div class="donation-item">
+                                <span class="donation-label">OXC:</span>
+                                <code class="donation-address">oxc1q3psft0hvlslddyp8ktr3s737req7q8hrl0rkly</code>
+                                <button class="copy-btn" onclick="copyToClipboard('oxc1q3psft0hvlslddyp8ktr3s737req7q8hrl0rkly')">Copy</button>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">OXG:</span>
+                                <code class="donation-address">oxg1q34apjkn2yc6rsvuua98432ctqdrjh9hdkhpx0t</code>
+                                <button class="copy-btn" onclick="copyToClipboard('oxg1q34apjkn2yc6rsvuua98432ctqdrjh9hdkhpx0t')">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Links</span>
+                    </div>
+                    <div class="quick-links">
+                        <a href="https://ordexnetwork.org" target="_blank" class="quick-link">OrdexNetwork.org</a>
+                        <a href="https://explorer.ordexcoin.com" target="_blank" class="quick-link">Explorer</a>
+                        <a href="https://github.com/OrdexCoin" target="_blank" class="quick-link">GitHub</a>
+                        <a href="https://discord.gg/rh7g84KxrR" target="_blank" class="quick-link">Discord</a>
                     </div>
                 </div>
             </div>

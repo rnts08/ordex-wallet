@@ -65,6 +65,28 @@ def create_wallet():
         ordexcoind = rpc_manager.get_client("ordexcoind")
         ordexgoldd = rpc_manager.get_client("ordexgoldd")
 
+        try:
+            wallets = ordexcoind.listwallets()
+            if "wallet" not in wallets:
+                try:
+                    ordexcoind.call("createwallet", "wallet")
+                except:
+                    pass
+            ordexcoind.loadwallet("wallet")
+        except Exception as e:
+            logger.warning(f"Error with ordexcoind wallet: {e}")
+
+        try:
+            wallets = ordexgoldd.listwallets()
+            if "wallet" not in wallets:
+                try:
+                    ordexgoldd.call("createwallet", "wallet")
+                except:
+                    pass
+            ordexgoldd.loadwallet("wallet")
+        except Exception as e:
+            logger.warning(f"Error with ordexgoldd wallet: {e}")
+
         ordexcoin_address = ordexcoind.getnewaddress()
         ordexgold_address = ordexgoldd.getnewaddress()
 
@@ -152,7 +174,7 @@ def get_wallet_info():
     rpc_manager = current_app.config["rpc_manager"]
 
     if not db.has_wallet():
-        return jsonify({"error": "No wallet found"}), 404
+        return jsonify({"has_wallet": False, "error": "No wallet found"}), 200
 
     try:
         ordexcoind = rpc_manager.get_client("ordexcoind")
