@@ -10,6 +10,13 @@ let refreshInterval = null;
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
+    // Set favicon to ordexnetwork logo
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/png';
+    favicon.href = 'ordexnetwork.png';
+    document.head.appendChild(favicon);
+    
     await initApp();
 });
 

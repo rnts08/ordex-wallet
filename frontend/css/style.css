@@ -108,6 +108,14 @@ header {
     letter-spacing: -0.02em;
 }
 
+.chain-logo {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
 /* Navigation */
 nav {
     display: flex;
