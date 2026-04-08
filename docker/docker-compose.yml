@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  ordexcoind:
+    image: ordexnetwork/ordexcoind:latest
+    container_name: ordexcoind
+    volumes:
+      - ordexcoin_data:/root/.ordexcoin
+      - ./bin:/bin:ro
+    ports:
+      - "25173:25173"
+      - "9333:9333"
+    command: ["ordexcoind", "-printtoconsole", "-rpcallowip=0.0.0.0", "-conf=/config/ordexcoind.conf"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ordexcoind", "-rpcwait", "-rpcclienttimeout=5", "getinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ordexgoldd:
+    image: ordexnetwork/ordexgoldd:latest
+    container_name: ordexgoldd
+    volumes:
+      - ordexgold_data:/root/.ordexgold
+      - ./bin:/bin:ro
+    ports:
+      - "25466:25466"
+      - "9334:9334"
+    command: ["ordexgoldd", "-printtoconsole", "-rpcallowip=0.0.0.0", "-conf=/config/ordexgoldd.conf"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ordexgoldd", "-rpcwait", "-rpcclienttimeout=5", "getinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ordexwallet
+    volumes:
+      - wallet_data:/data
+      - config_data:/config
+      - logs:/logs
+    ports:
+      - "5000:5000"
+    environment:
+      - CONFIG_DIR=/config
+      - DATA_DIR=/data
+      - HOST=0.0.0.0
+      - PORT=5000
+      - FLASK_ENV=production
+    depends_on:
+      ordexcoind:
+        condition: service_healthy
+      ordexgoldd:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ordexcoin_data:
+    driver: local
+  ordexgold_data:
+    driver: local
+  wallet_data:
+    driver: local
+  config_data:
+    driver: local
+  logs:
+    driver: local

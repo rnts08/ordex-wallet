@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrdexWallet</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo" onclick="showPage('dashboard')">
+                    <div class="logo-icon">O</div>
+                    <span class="logo-text">OrdexWallet</span>
+                </a>
+                <nav id="main-nav">
+                    <a href="#dashboard" onclick="showPage('dashboard')" class="active">Dashboard</a>
+                    <a href="#wallet" onclick="showPage('wallet')">Wallet</a>
+                    <a href="#transactions" onclick="showPage('transactions')">Transactions</a>
+                    <a href="#system" onclick="showPage('system')">System</a>
+                    <a href="#settings" onclick="showPage('settings')">Settings</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page">
+                <h1 class="page-title">Dashboard</h1>
+                
+                <div class="grid grid-2 mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">OrdexCoin (OXC)</span>
+                            <span id="oxc-status" class="status status-syncing">
+                                <span class="status-dot"></span>
+                                Syncing
+                            </span>
+                        </div>
+                        <div class="balance" id="oxc-balance">0.00 <span class="balance-symbol">OXC</span></div>
+                        <div class="balance-fiat mt-1" id="oxc-fiat">$0.00 USD</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">OrdexGold (OXG)</span>
+                            <span id="oxg-status" class="status status-syncing">
+                                <span class="status-dot"></span>
+                                Syncing
+                            </span>
+                        </div>
+                        <div class="balance" id="oxg-balance">0.00 <span class="balance-symbol">OXG</span></div>
+                        <div class="balance-fiat mt-1" id="oxg-fiat">$0.00 USD</div>
+                    </div>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Total Balance</span>
+                    </div>
+                    <div class="balance" id="total-balance">0.00 <span class="balance-symbol">OXC + OXG</span></div>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Quick Links</span>
+                    </div>
+                    <div class="quick-links">
+                        <a href="https://explorer.ordexcoin.com" target="_blank" class="quick-link">Explorer</a>
+                        <a href="https://ordexnetwork.org/Pool.html" target="_blank" class="quick-link">Mining Pool</a>
+                        <a href="https://ordexnetwork.org/Swap.html" target="_blank" class="quick-link">Swap</a>
+                        <a href="https://ordexnetwork.org/Staking.html" target="_blank" class="quick-link">Staking</a>
+                        <a href="https://discord.gg/rh7g84KxrR" target="_blank" class="quick-link">Discord</a>
+                        <a href="https://github.com/OrdexCoin" target="_blank" class="quick-link">GitHub</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Recent Transactions</span>
+                        <a href="#transactions" onclick="showPage('transactions')" class="btn btn-small btn-secondary">View All</a>
+                    </div>
+                    <div id="recent-tx" class="tx-list">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet Setup Page -->
+            <div id="wallet-setup" class="page hidden">
+                <h1 class="page-title">Welcome to OrdexWallet</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Create New Wallet</span>
+                    </div>
+                    <p class="text-muted mb-2">Create a new wallet to receive and send OrdexCoin and OrdexGold.</p>
+                    <div class="form-group">
+                        <label class="form-label">Backup Passphrase (optional)</label>
+                        <input type="password" id="create-passphrase" class="form-input" placeholder="Enter passphrase for encrypting backups">
+                        <p class="text-small text-muted mt-1">If provided, this passphrase will be required to restore backups.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="createWallet()">Create Wallet</button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Import Existing Wallet</span>
+                    </div>
+                    <p class="text-muted mb-2">Import an existing wallet using your private key in WIF format.</p>
+                    <div class="form-group">
+                        <label class="form-label">Private Key (WIF)</label>
+                        <input type="password" id="import-key" class="form-input" placeholder="Enter your private key">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Network</label>
+                        <select id="import-network" class="form-input">
+                            <option value="ordexcoin">OrdexCoin (OXC)</option>
+                            <option value="ordexgold">OrdexGold (OXG)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Backup Passphrase (optional)</label>
+                        <input type="password" id="import-passphrase" class="form-input" placeholder="Enter passphrase for encrypting backups">
+                    </div>
+                    <button class="btn btn-primary" onclick="importWallet()">Import Wallet</button>
+                </div>
+            </div>
+
+            <!-- Wallet Page -->
+            <div id="wallet" class="page hidden">
+                <h1 class="page-title">Wallet</h1>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showWalletTab('overview')">Overview</button>
+                    <button class="tab" onclick="showWalletTab('receive')">Receive</button>
+                    <button class="tab" onclick="showWalletTab('send')">Send</button>
+                    <button class="tab" onclick="showWalletTab('backup')">Backup/Restore</button>
+                </div>
+                
+                <div id="wallet-overview" class="wallet-tab">
+                    <div class="grid grid-2 mb-2">
+                        <div class="card">
+                            <div class="card-title mb-1">OrdexCoin Balance</div>
+                            <div class="balance" id="wallet-oxc-balance">0.00 <span class="balance-symbol">OXC</span></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title mb-1">OrdexGold Balance</div>
+                            <div class="balance" id="wallet-oxg-balance">0.00 <span class="balance-symbol">OXG</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="wallet-receive" class="wallet-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Receive OXC</span>
+                            <button class="btn btn-small btn-secondary" onclick="generateAddress('ordexcoin')">Generate New</button>
+                        </div>
+                        <div id="oxc-address" class="address-display">
+                            <span class="address-text">Loading...</span>
+                            <button class="copy-btn" onclick="copyAddress(this)">Copy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Receive OXG</span>
+                            <button class="btn btn-small btn-secondary" onclick="generateAddress('ordexgold')">Generate New</button>
+                        </div>
+                        <div id="oxg-address" class="address-display">
+                            <span class="address-text">Loading...</span>
+                            <button class="copy-btn" onclick="copyAddress(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="wallet-send" class="wallet-tab hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Send Transaction</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Network</label>
+                            <select id="send-network" class="form-input">
+                                <option value="ordexcoin">OrdexCoin (OXC)</option>
+                                <option value="ordexgold">OrdexGold (OXG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Recipient Address</label>
+                            <input type="text" id="send-address" class="form-input" placeholder="Enter recipient address">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Amount</label>
+                            <input type="number" id="send-amount" class="form-input" placeholder="0.00000000" step="0.00000001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fee (optional)</label>
+                            <input type="number" id="send-fee" class="form-input" placeholder="0.001" step="0.00000001">
+                        </div>
+                        <button class="btn btn-primary" onclick="sendTransaction()">Send</button>
+                    </div>
+                </div>
+                
+                <div id="wallet-backup" class="wallet-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Backup Wallet</span>
+                        </div>
+                        <p class="text-muted mb-2">Create an encrypted backup of your wallet.</p>
+                        <div class="form-group">
+                            <label class="form-label">Passphrase</label>
+                            <input type="password" id="backup-passphrase" class="form-input" placeholder="Enter backup passphrase">
+                        </div>
+                        <button class="btn btn-primary" onclick="createBackup()">Create Backup</button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Restore Wallet</span>
+                        </div>
+                        <p class="text-muted mb-2">Restore your wallet from a backup file.</p>
+                        <div class="form-group">
+                            <label class="form-label">Backup File</label>
+                            <input type="file" id="restore-file" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Passphrase</label>
+                            <input type="password" id="restore-passphrase" class="form-input" placeholder="Enter backup passphrase">
+                        </div>
+                        <button class="btn btn-primary" onclick="restoreBackup()">Restore</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Page -->
+            <div id="transactions" class="page hidden">
+                <h1 class="page-title">Transactions</h1>
+                
+                <div class="card mb-2">
+                    <div class="flex gap-1">
+                        <select id="tx-filter-network" class="form-input" style="width: auto;">
+                            <option value="">All Networks</option>
+                            <option value="ordexcoin">OrdexCoin</option>
+                            <option value="ordexgold">OrdexGold</option>
+                        </select>
+                        <select id="tx-filter-category" class="form-input" style="width: auto;">
+                            <option value="">All Types</option>
+                            <option value="receive">Received</option>
+                            <option value="send">Sent</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div id="tx-list" class="tx-list">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Page -->
+            <div id="system" class="page hidden">
+                <h1 class="page-title">System</h1>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showSystemTab('stats')">Stats</button>
+                    <button class="tab" onclick="showSystemTab('config')">Config</button>
+                    <button class="tab" onclick="showSystemTab('console')">Console</button>
+                    <button class="tab" onclick="showSystemTab('logs')">Logs</button>
+                </div>
+                
+                <div id="system-stats" class="system-tab">
+                    <div class="grid grid-3 mb-2">
+                        <div class="card">
+                            <div class="card-title">Disk Usage</div>
+                            <div class="stats-grid mt-1">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="disk-total">-</div>
+                                    <div class="stat-label">Total GB</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="disk-used">-</div>
+                                    <div class="stat-label">Used GB</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="disk-percent">-</div>
+                                    <div class="stat-label">Usage %</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">Memory</div>
+                            <div class="stats-grid mt-1">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="mem-total">-</div>
+                                    <div class="stat-label">Total GB</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="mem-used">-</div>
+                                    <div class="stat-label">Used GB</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="mem-percent">-</div>
+                                    <div class="stat-label">Usage %</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">Network</div>
+                            <div class="stats-grid mt-1">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="net-sent">-</div>
+                                    <div class="stat-label">Sent MB</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="net-recv">-</div>
+                                    <div class="stat-label">Recv MB</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="system-config" class="system-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">OrdexCoin Daemon Config</span>
+                            <button class="btn btn-small btn-primary" onclick="saveDaemonConfig('ordexcoind')">Save</button>
+                        </div>
+                        <div id="ordexcoind-config" class="form-group">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">OrdexGold Daemon Config</span>
+                            <button class="btn btn-small btn-primary" onclick="saveDaemonConfig('ordexgoldd')">Save</button>
+                        </div>
+                        <div id="ordexgoldd-config" class="form-group">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="system-console" class="system-tab hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">RPC Console</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Daemon</label>
+                            <select id="console-daemon" class="form-input" style="width: auto;">
+                                <option value="ordexcoind">OrdexCoin</option>
+                                <option value="ordexgoldd">OrdexGold</option>
+                            </select>
+                        </div>
+                        <div class="console" id="console-output">
+                            <div>Welcome to OrdexWallet RPC Console</div>
+                            <div>Type a command and press Enter to execute.</div>
+                        </div>
+                        <div class="console-input">
+                            <input type="text" id="console-input" placeholder="e.g., getinfo" onkeypress="handleConsoleKeypress(event)">
+                            <button class="btn btn-primary" onclick="executeConsoleCommand()">Execute</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="system-logs" class="system-tab hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Audit Logs</span>
+                        </div>
+                        <div id="audit-logs" class="tx-list">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page hidden">
+                <h1 class="page-title">Settings</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Wallet Settings</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Backup Frequency</label>
+                        <select id="backup-frequency" class="form-input">
+                            <option value="6">Every 6 hours</option>
+                            <option value="12">Every 12 hours</option>
+                            <option value="24" selected>Every 24 hours</option>
+                            <option value="168">Weekly</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>OrdexWallet &copy; 2026 ORDEX PROTOCOL. MIT LICENSE.</p>
+        </div>
+    </footer>
+
+    <script src="js/services.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
