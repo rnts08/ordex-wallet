@@ -310,7 +310,18 @@ POST /api/system/rpc-console - Execute RPC command
 
 ## Support
 
-This is an open-source project maintained by the OrdexNetwork community.
+This is an open-source project maintained by the OrdexNetwork community. To support the development efforts donate to the following addresses:
+
+    * BTC: bc1qkmzc6d49fl0edyeynezwlrfqv486nmk6p5pmta
+    * ETH/ERC-20: 0xC13D012CdAae7978CAa0Ef5B1E30ac6e65e6b17F
+    * LTC: ltc1q0ahxru7nwgey64agffr7x89swekj7sz8stqc6x
+    * SOL: HB2o6q6vsW5796U5y7NxNqA7vYZW1vuQjpAHDo7FAMG8
+    * XRP: rUW7Q64vR4PwDM3F27etd6ipxK8MtuxsFs
+
+To support tests and implementation with the ordexnetwork, you can help by donating tokens that will be used for testing and refining the system. 
+
+    * OXC: oxc1q3psft0hvlslddyp8ktr3s737req7q8hrl0rkly
+    * OXG: oxg1q34apjkn2yc6rsvuua98432ctqdrjh9hdkhpx0t
 
 For issues and contributions, visit the repository.
 
