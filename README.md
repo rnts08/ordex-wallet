@@ -61,6 +61,14 @@ The wallet will be available at `http://localhost:15000`
 - **System Management**: Daemon configuration, RPC console, system statistics, audit logging
 - **Message Signing**: Sign and verify messages with wallet addresses
 
+## Screenshots
+
+![OrdexWallet Dashboard](Screenshot.jpg)
+*Dashboard showing real-time balances and network status*
+
+![OrdexWallet Wallet Management](Screenshot2.jpg)
+*Wallet management interface with backup/restore functionality*
+
 ## Prerequisites
 
 Before running OrdexWallet, you need to download the daemon binaries:
