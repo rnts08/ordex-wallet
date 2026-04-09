@@ -46,6 +46,8 @@ def create_app(config_dir: str = None, data_dir: str = None) -> Flask:
         if config_generator.is_first_startup():
             logger.info("First startup - generating configuration...")
             config_generator.generate_all_configs()
+        else:
+            logger.info("Configuration already exists, loading...")
 
         app.config["config_generator"] = config_generator
         app.config["app_config"] = config_generator.load_config()
@@ -59,6 +61,7 @@ def create_app(config_dir: str = None, data_dir: str = None) -> Flask:
 
     try:
         db_manager = DatabaseManager(data_dir)
+        logger.info("DatabaseManager initialized successfully")
         app.config["db_manager"] = db_manager
     except Exception as e:
         logger.warning(f"Could not initialize database: {e}")
@@ -74,9 +77,16 @@ def create_app(config_dir: str = None, data_dir: str = None) -> Flask:
                     if "wallet" not in wallets:
                         try:
                             client.call("createwallet", "wallet")
-                        except:
-                            pass
+                            logger.info(f"Created new wallet for {client.daemon_name}")
+                        except Exception as e:
+                            if "Database already exists" in str(e):
+                                logger.info(
+                                    f"Wallet already exists for {client.daemon_name}, loading..."
+                                )
+                            else:
+                                raise
                     client.loadwallet("wallet")
+                    logger.info(f"Loaded wallet for {client.daemon_name}")
                 except Exception as e:
                     logger.warning(f"Wallet init error for {client.daemon_name}: {e}")
         except Exception as e:

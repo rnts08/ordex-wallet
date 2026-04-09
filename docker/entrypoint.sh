@@ -71,9 +71,34 @@ ordexcoind -daemon -datadir=/data/blockchain/ordexcoin -conf=/data/config/ordexc
 echo "Starting ordexgoldd daemon..."
 ordexgoldd -daemon -datadir=/data/blockchain/ordexgold -conf=/data/config/ordexgoldd.conf || true
 
-# Wait briefly for daemons to start accepting connections
-echo "Waiting for daemons to initialize..."
-sleep 5
+# Wait for daemons to be ready before starting Flask
+echo "Waiting for daemons to be ready..."
+MAX_RETRIES=30
+RETRY_DELAY=2
+
+wait_for_daemon() {
+    local daemon_name=$1
+    local rpc_port=$2
+    local retries=0
+    
+    while [ $retries -lt $MAX_RETRIES ]; do
+        # Use Python to check if port is open (more reliable than curl)
+        if python3 -c "import socket; s=socket.socket(); s.settimeout(1); result=s.connect_ex(('127.0.0.1',$rpc_port)); s.close(); exit(0 if result==0 else 1)" 2>/dev/null; then
+            echo "  $daemon_name: ready (port $rpc_port)"
+            return 0
+        fi
+        retries=$((retries + 1))
+        echo "  Waiting for $daemon_name... ($retries/$MAX_RETRIES)"
+        sleep $RETRY_DELAY
+    done
+    
+    echo "  WARNING: $daemon_name may not be ready after $MAX_RETRIES attempts"
+    return 1
+}
+
+# Wait for both daemons
+wait_for_daemon "ordexcoind" "25173"
+wait_for_daemon "ordexgoldd" "25466"
 
 # Verify daemons are running (using /proc check since pgrep may not be available)
 echo "Verifying daemon processes..."

@@ -18,7 +18,18 @@ system_bp = Blueprint("system", __name__)
 @system_bp.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
-    rpc_manager = current_app.config["rpc_manager"]
+    rpc_manager = current_app.config.get("rpc_manager")
+
+    if not rpc_manager:
+        return jsonify(
+            {
+                "status": "starting",
+                "daemons": {"ordexcoind": False, "ordexgoldd": False},
+                "wallet_ready": False,
+                "timestamp": int(time.time() * 1000),
+                "message": "Application still initializing...",
+            }
+        ), 503
 
     try:
         sync_status = rpc_manager.get_sync_status()
@@ -26,8 +37,13 @@ def health_check():
         ordexcoind_connected = sync_status.get("ordexcoind", {}).get("connected", False)
         ordexgoldd_connected = sync_status.get("ordexgoldd", {}).get("connected", False)
 
-        db = current_app.config["db_manager"].get_db()
-        has_wallet = db.has_wallet()
+        db = current_app.config.get("db_manager")
+        has_wallet = False
+        if db:
+            try:
+                has_wallet = db.get_db().has_wallet()
+            except:
+                pass
 
         return jsonify(
             {
