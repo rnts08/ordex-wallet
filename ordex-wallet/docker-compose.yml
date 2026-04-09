@@ -1,0 +1,34 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: ordex-wallet_web_1
+      APP_PORT: 15000
+
+  web:
+    build:
+      context: ..
+      dockerfile: ordex-wallet/Dockerfile
+    image: ordex-wallet:1.0.0
+    restart: on-failure
+    stop_grace_period: 1m
+    ports:
+      - "15000:15000"
+    volumes:
+      - ${APP_DATA_DIR}/config:/data/config
+      - ${APP_DATA_DIR}/blockchain/ordexcoin:/data/blockchain/ordexcoin
+      - ${APP_DATA_DIR}/blockchain/ordexgold:/data/blockchain/ordexgold
+      - ${APP_DATA_DIR}/ordexwallet.db:/data/ordexwallet.db
+      - ${APP_DATA_DIR}/backups:/data/backups
+      - ${APP_DATA_DIR}/logs:/data/logs
+      - ${APP_DATA_DIR}/bin:/data/bin
+    environment:
+      PORT: 15000
+      HOST: 0.0.0.0
+      CONFIG_DIR: /data/config
+      DATA_DIR: /data
+      FLASK_ENV: production
+      FLASK_DEBUG: "false"
+      ORDEXCOIND_RPC_PORT: 25173
+      ORDEXGOLDD_RPC_PORT: 25466
