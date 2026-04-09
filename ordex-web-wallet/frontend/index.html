@@ -39,8 +39,7 @@
 
     <main class="container">
         <section id="page-home" class="page">
-            <div class="hero">
-                <img src="ordexnetwork.png" alt="OrdexNetwork" class="hero-logo">
+            <div class="hero" style="background: url('ordexnetwork.png') no-repeat center top; background-size: 120px; padding-top: 140px;">
                 <h1>Ordex Web Wallet</h1>
                 <p class="hero-subtitle">Secure multi-user wallet for OrdexCoin and OrdexGold</p>
                 <div class="hero-buttons">
@@ -65,55 +64,55 @@
         </section>
 
         <section id="page-login" class="page hidden">
-            <div class="card">
+            <div class="card" style="max-width: 400px; margin: 80px auto;">
                 <h2>Login</h2>
                 <form onsubmit="handleLogin(event)">
                     <div class="form-group">
                         <label>Username</label>
-                        <input type="text" id="login-username" required>
+                        <input type="text" id="login-username" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="login-password" required>
+                        <input type="password" id="login-password" class="form-input" required>
                     </div>
                     <div class="form-error hidden" id="login-error"></div>
-                    <button type="submit" class="btn btn-primary">Login</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                 </form>
                 <p class="form-footer">Don't have an account? <a href="#register" onclick="showPage('register')">Register</a></p>
             </div>
         </section>
 
         <section id="page-register" class="page hidden">
-            <div class="card">
+            <div class="card" style="max-width: 400px; margin: 80px auto;">
                 <h2>Create Account</h2>
                 <form onsubmit="handleRegister(event)">
                     <div class="form-group">
                         <label>Username</label>
-                        <input type="text" id="register-username" required minlength="3">
+                        <input type="text" id="register-username" class="form-input" required minlength="3">
                     </div>
                     <div class="form-group">
                         <label>Email</label>
-                        <input type="email" id="register-email" required>
+                        <input type="email" id="register-email" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="register-password" required minlength="8">
+                        <input type="password" id="register-password" class="form-input" required minlength="8">
                         <small>At least 8 characters</small>
                     </div>
                     <div class="form-group">
                         <label>Wallet Passphrase</label>
-                        <input type="password" id="register-passphrase" required minlength="8">
+                        <input type="password" id="register-passphrase" class="form-input" required minlength="8">
                         <small>Used to encrypt your wallets. <strong>DON'T FORGET THIS!</strong></small>
                     </div>
                     <div class="form-error hidden" id="register-error"></div>
-                    <button type="submit" class="btn btn-primary">Create Account</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
                 </form>
                 <p class="form-footer">Already have an account? <a href="#login" onclick="showPage('login')">Login</a></p>
             </div>
         </section>
 
         <section id="page-dashboard" class="page hidden">
-            <h2>My Wallet</h2>
+            <h2 style="margin-top: 80px;">My Wallet</h2>
             <div class="balance-cards">
                 <div class="balance-card">
                     <div class="balance-header">
@@ -139,42 +138,42 @@
         </section>
 
         <section id="page-send" class="page hidden">
-            <div class="card">
+            <div class="card" style="max-width: 500px; margin: 80px auto;">
                 <h2>Send</h2>
                 <form onsubmit="handleSend(event)">
                     <div class="form-group">
                         <label>Chain</label>
-                        <select id="send-chain">
+                        <select id="send-chain" class="form-input">
                             <option value="ordexcoin">OrdexCoin</option>
                             <option value="ordexgold">OrdexGold</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>To Address</label>
-                        <input type="text" id="send-address" required>
+                        <input type="text" id="send-address" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label>Amount</label>
-                        <input type="number" id="send-amount" step="0.00000001" required>
+                        <input type="number" id="send-amount" class="form-input" step="0.00000001" required>
                     </div>
                     <div class="form-error hidden" id="send-error"></div>
-                    <button type="submit" class="btn btn-primary">Send</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send</button>
                 </form>
             </div>
         </section>
 
         <section id="page-receive" class="page hidden">
-            <div class="card">
+            <div class="card" style="max-width: 500px; margin: 80px auto;">
                 <h2>Receive</h2>
                 <div class="address-list">
                     <div class="address-item">
                         <span class="address-label">OrdexCoin</span>
-                        <code class="address-value" id="oxc-address">Loading...</code>
+                        <code class="address-value" id="oxc-address" style="word-break: break-all;">Loading...</code>
                         <button class="btn-copy" onclick="copyAddress('oxc-address')">Copy</button>
                     </div>
                     <div class="address-item">
                         <span class="address-label">OrdexGold</span>
-                        <code class="address-value" id="oxg-address">Loading...</code>
+                        <code class="address-value" id="oxg-address" style="word-break: break-all;">Loading...</code>
                         <button class="btn-copy" onclick="copyAddress('oxg-address')">Copy</button>
                     </div>
                 </div>
@@ -182,7 +181,7 @@
         </section>
 
         <section id="page-history" class="page hidden">
-            <h2>Transaction History</h2>
+            <h2 style="margin-top: 80px;">Transaction History</h2>
             <div class="table-container">
                 <table class="table">
                     <thead>
@@ -200,7 +199,7 @@
         </section>
 
         <section id="page-backup" class="page hidden">
-            <div class="card">
+            <div class="card" style="max-width: 500px; margin: 80px auto;">
                 <h2>Backup</h2>
                 <p>Download encrypted backup of your wallets</p>
                 <button class="btn btn-primary" onclick="createBackup()">Download Backup</button>
@@ -208,7 +207,7 @@
         </section>
 
         <section id="page-admin" class="page hidden">
-            <h2>Admin Dashboard</h2>
+            <h2 style="margin-top: 80px;">Admin Dashboard</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="stat-users">--</div>
@@ -241,6 +240,12 @@
             </div>
         </section>
     </main>
+
+    <footer>
+        <div class="container">
+            <p>Ordex Web Wallet &copy; 2026 ORDEX PROTOCOL. All rights reserved.</p>
+        </div>
+    </footer>
 
     <script src="js/app.js"></script>
 </body>
