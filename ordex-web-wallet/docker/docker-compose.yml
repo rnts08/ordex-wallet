@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  webwallet:
+    build:
+      context: ../..
+      dockerfile: ordex-web-wallet/docker/Dockerfile
+    container_name: ordex-web-wallet
+    ports:
+      - "15000:5000"
+    volumes:
+      - ordexweb_data:/data
+      - ./bin:/app/bin:ro
+    environment:
+      - DATABASE_URL=postgresql://webwallet:${DB_PASSWORD}@postgres:5432/webwallet
+      - OXRPC_URL=http://ordexcoind:5332
+      - OGRPC_URL=http://ordexgoldd:5333
+      - RPC_USER=ordex
+      - RPC_PASS=${RPC_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - SESSION_DURATION=86400
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ordexcoind:
+        condition: service_healthy
+      ordexgoldd:
+        condition: service_healthy
+    networks:
+      - webwallet_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ordex-web-wallet-postgres
+    environment:
+      - POSTGRES_DB=webwallet
+      - POSTGRES_USER=webwallet
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - webwallet_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webwallet -d webwallet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ordexcoind:
+    image: ordexnetwork/ordexcoind:latest
+    container_name: ordex-web-wallet-ordexcoind
+    command: ordexcoind -server -rpcbind=0.0.0.0:5332 -rpcallowip=172.16.0.0/12 -rpcuser=ordex -rpcpassword=${RPC_PASSWORD} -txindex=1 -prune=0
+    volumes:
+      - ordexweb_data:/data
+    networks:
+      - webwallet_network
+      - daemon_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5332"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    mem_limit: 2g
+    mem_reservation: 512m
+
+  ordexgoldd:
+    image: ordexnetwork/ordexgoldd:latest
+    container_name: ordex-web-wallet-ordexgoldd
+    command: ordexgoldd -server -rpcbind=0.0.0.0:5333 -rpcallowip=172.16.0.0/12 -rpcuser=ordex -rpcpassword=${RPC_PASSWORD} -txindex=1 -prune=0
+    volumes:
+      - ordexweb_data:/data
+    networks:
+      - webwallet_network
+      - daemon_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5333"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    mem_limit: 2g
+    mem_reservation: 512m
+
+networks:
+  webwallet_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.1.0/24
+  daemon_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.2.0/24
+
+volumes:
+  ordexweb_data:
+    name: ordexweb_data
+  postgres_data:
+    name: ordexweb_postgres_data
