@@ -43,51 +43,59 @@
 **Monitoring**: Use `getblockchaininfo` via RPC console to check sync progress.
 
 #### 7. Volume Permissions
-**Severity**: Medium
+**Status**: FIXED
 **Description**: If volumes are pre-created with wrong ownership, daemon config write fails.
-**Impact**: Container exits with error.
-**Fix**: Ensure volumes are owned by user 1000 (umbrel) or run with explicit uid mapping.
+**Fix**: Dockerfile creates umbrel user and directories. Entrypoint sets ownership based on running user. Added docker-compose user mapping.
 
 #### 8. Log Rotation Not Implemented
-**Severity**: Low
+**Status**: INFO / FUTURE IMPROVEMENT
 **Description**: Application logs grow indefinitely.
 **Impact**: Disk space exhaustion on long-running instances.
-**Workaround**: Mount logs to host and implement external rotation.
+**Note**: This is a feature request. For production, configure logrotate on the host or mount logs to host directory.
 
 #### 9. Backup File Location
-**Severity**: Low
+**Status**: INFO / FUTURE IMPROVEMENT
 **Description**: Backups stored in container volume, not exported to host by default.
 **Impact**: Backups lost on container deletion.
-**Workaround**: Use `${APP_DATA_DIR}/backups` volume mount to persist.
+**Note**: This is a feature request. Use volume mount `${APP_DATA_DIR}/backups` to persist backups to host.
 
 ## Security Considerations
 
+### 12. Weak Default Credentials Generation
+**Status**: FIXED
+**Description**: Uses Python's `secrets.choice()` for password generation.
+**Fix**: Changed to `secrets.token_urlsafe()` for stronger entropy.
+
+## Security Considerations (by design)
+
 ### 10. RPC Binding to localhost Only
+**Status**: BY DESIGN
 **Description**: Daemons bind RPC to 127.0.0.1 only.
-**Impact**: No external RPC access (intended security).
-**Note**: Correct for wallet use case.
+**Note**: Correct for wallet use case - prevents external RPC access.
 
 ### 11. No TLS on RPC
+**Status**: BY DESIGN
 **Description**: RPC communication is unencrypted within container.
-**Impact**: Internal-only (not exposed externally).
 **Note**: Acceptable for localhost-only RPC.
 
-### 12. Weak Default Credentials Generation
-**Description**: Uses Python's `secrets.choice()` for password generation.
-**Impact**: Adequate for local/development.
-**Note**: Consider using `secrets.token_urlsafe()` for longer strings.
-
-## Performance Issues
+## Performance Considerations
 
 ### 13. Blockchain Index Rebuild
+**Status**: EXPECTED
 **Description**: On first start, daemons build txindex which is resource-intensive.
-**Impact**: High CPU and I/O during initial sync.
 **Note**: This is expected behavior for full node operation.
 
 ### 14. No Connection Pooling
+**Status**: ACCEPTABLE
 **Description**: Each RPC call creates new HTTP connection.
-**Impact**: Minor overhead on high-frequency calls.
 **Note**: Not noticeable for typical wallet usage.
+
+## Data Integrity
+
+### 16. Config File Race Condition
+**Status**: ACCEPTABLE
+**Description**: Multiple containers starting simultaneously could both try to generate config.
+**Note**: Single-container deployment makes this unlikely. For multi-container, use locking.
 
 ## Data Integrity
 
