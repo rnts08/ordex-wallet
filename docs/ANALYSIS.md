@@ -114,10 +114,9 @@ Planned enhancements (not bugs):
 
 1. ~~Add sync percentage to health check~~ - COMPLETED
 2. ~~Prometheus metrics endpoint~~ - COMPLETED
-3. **Implement log rotation** - Internal rotation with size limits
-4. **Hardware wallet integration** - Long-term feature
-5. **Multi-signature wallet support** - Long-term feature
-6. **Lightning Network integration** - Future OXC feature
+3. ~~Implement log rotation~~ - COMPLETED (10MB max, 5 files rotation in background)
+
+See [WISHLIST.md](./WISHLIST.md) for long-term features not currently planned.
 
 ---
 
