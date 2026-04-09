@@ -22,7 +22,7 @@ These items are intentional or expected and require no action:
 |---|-------|--------|-------|
 | 4 | Inconsistent Port Configuration | BY DESIGN | Standalone uses 5000 internal, Umbriel uses 15000 |
 | 6 | Blockchain Sync Time | EXPECTED | Full node behavior, takes hours on first start |
-| 8 | Log Rotation Not Implemented | FEATURE | Production should use logrotate on host |
+| 8 | Log Rotation Not Implemented | FEATURE | IMPLEMENTED - 10MB max, 5 files |
 | 9 | Backup File Location | FEATURE | Use volume mount to persist |
 | 10 | RPC Binding to localhost Only | BY DESIGN | Security feature |
 | 11 | No TLS on RPC | BY DESIGN | Internal-only, acceptable |
