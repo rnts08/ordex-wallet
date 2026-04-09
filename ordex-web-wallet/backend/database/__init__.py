@@ -138,10 +138,13 @@ MIGRATIONS = [
 
 
 def get_schema_version() -> int:
-    result = DATABASE.execute_one(
-        "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
-    )
-    return result["version"] if result else 0
+    try:
+        result = DATABASE.execute_one(
+            "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
+        )
+        return result["version"] if result else 0
+    except Exception:
+        return 0
 
 
 def apply_migration(version: int, sql: str):

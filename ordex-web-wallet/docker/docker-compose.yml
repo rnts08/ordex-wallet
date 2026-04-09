@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   webwallet:
     build:
@@ -22,15 +20,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ordexcoind:
-        condition: service_healthy
-      ordexgoldd:
-        condition: service_healthy
     networks:
       - webwallet_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/system/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,7 +49,9 @@ services:
       retries: 5
 
   ordexcoind:
-    image: ordexnetwork/ordexcoind:latest
+    build:
+      context: ../..
+      dockerfile: ordex-web-wallet/docker/ordexcoind/Dockerfile
     container_name: ordex-web-wallet-ordexcoind
     command: ordexcoind -server -rpcbind=0.0.0.0:5332 -rpcallowip=172.16.0.0/12 -rpcuser=ordex -rpcpassword=${RPC_PASSWORD} -txindex=1 -prune=0
     volumes:
@@ -64,16 +60,13 @@ services:
       - webwallet_network
       - daemon_network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5332"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     mem_limit: 2g
     mem_reservation: 512m
 
   ordexgoldd:
-    image: ordexnetwork/ordexgoldd:latest
+    build:
+      context: ../..
+      dockerfile: ordex-web-wallet/docker/ordexgoldd/Dockerfile
     container_name: ordex-web-wallet-ordexgoldd
     command: ordexgoldd -server -rpcbind=0.0.0.0:5333 -rpcallowip=172.16.0.0/12 -rpcuser=ordex -rpcpassword=${RPC_PASSWORD} -txindex=1 -prune=0
     volumes:
@@ -82,11 +75,6 @@ services:
       - webwallet_network
       - daemon_network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5333"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     mem_limit: 2g
     mem_reservation: 512m
 

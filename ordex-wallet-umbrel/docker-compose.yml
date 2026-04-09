@@ -10,7 +10,7 @@ services:
     build:
       context: ..
       dockerfile: ordex-wallet/Dockerfile
-    image: ordex-wallet:1.0.0
+    image: rnts08vn/ordexnetwork-umbrel:1.1.0@sha256:73bc1ae2d801209dece22b4e99806ea315d3ef5164608fb9046f0ea89dbb9ef9
     restart: on-failure
     stop_grace_period: 1m
     ports:

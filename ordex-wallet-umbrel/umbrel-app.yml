@@ -26,7 +26,6 @@ releaseNotes: >-
   - Fixed volume permissions
   - Stronger credential generation
   
-  See docs/ANALYSIS.md for complete changelog.
 developer: OrdexNetwork
 website: https://ordexnetwork.org
 dependencies: []

@@ -1,19 +1,20 @@
 FROM python:3.12-slim
 
-# Create non-root user
-RUN useradd -m -u 1000 umbrel
-USER umbrel
-
-# Create required directories (data volumes will be mounted at /data)
-RUN mkdir -p /app/config /app/frontend /app/bin
-
-# Install system dependencies
+# Install system dependencies (as root)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
     libgomp1 \
     wget \
     tar \
     && rm -rf /var/lib/apt/lists/*
+
+# Create required directories (data volumes will be mounted at /data)
+RUN mkdir -p /app/config /app/frontend /app/bin
+
+# Create non-root user
+RUN useradd -m -u 1000 umbrel
+RUN chown -R umbrel:umbrel /app
+USER umbrel
 
 # Copy daemon binaries from parent (local dev) or download if not present
 COPY ../bin/ /app/bin/
@@ -44,9 +45,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ../backend/ /app/
 COPY ../frontend/ /app/frontend/
 
-# Copy entrypoint
+# Copy entrypoint (as root before switching user)
+USER root
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+USER umbrel
 
 # Set environment variables (data comes from mounted volumes at /data)
 ENV CONFIG_DIR=/data/config

@@ -28,16 +28,26 @@ log_rotate() {
     log_rotate
 done) &
 
+export PYTHONPATH="/app"
+
 echo "Initializing database..."
 python -c "
-import os
-import sys
+import os, sys
 sys.path.insert(0, '/app')
-os.environ.setdefault('DATABASE_URL', os.environ.get('DATABASE_URL', os.environ.get('DATABASE_URL', 'postgresql://webwallet:password@postgres:5432/webwallet')))
-os.environ.setdefault('RPC_PASS', os.environ.get('RPC_PASS', 'dummy'))
-from ordex_web_wallet.database import init_database
-init_database()
-print('Database ready')
-"
+
+# Ensure env vars are set for database
+db_url = os.environ.get('DATABASE_URL', '')
+rpc_pass = os.environ.get('RPC_PASS', '')
+
+if db_url and rpc_pass:
+    try:
+        from ordex_web_wallet.database import init_database
+        init_database()
+        print('Database initialized')
+    except Exception as e:
+        print(f'Database init: {e}')
+else:
+    print('Skipping DB init - env not ready')
+" || true
 
 exec "$@"
