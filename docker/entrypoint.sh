@@ -81,6 +81,67 @@ fi
 chown $USE_USER:$USE_GROUP /data/config/*.conf 2>/dev/null || true
 chmod 600 /data/config/*.conf 2>/dev/null || true
 
+# Setup log rotation
+echo "Setting up log rotation..."
+LOG_DIR="/data/logs"
+MAX_LOG_SIZE=10485760  # 10MB
+MAX_LOG_FILES=5
+
+# Create log rotation function
+rotate_logs() {
+    local log_file=$1
+    local max_size=$2
+    local max_files=$3
+    
+    if [ -f "$log_file" ]; then
+        local size=$(stat -c%s "$log_file" 2>/dev/null || echo 0)
+        if [ "$size" -gt "$max_size" ]; then
+            # Rotate logs
+            for i in $(seq $((max_files - 1)) -1 1); do
+                if [ -f "${log_file}.$i" ]; then
+                    mv "${log_file}.$i" "${log_file}.$((i + 1))"
+                fi
+            done
+            mv "$log_file" "${log_file}.1"
+            touch "$log_file"
+            chown $USE_USER:$USE_GROUP "$log_file" 2>/dev/null || true
+        fi
+    fi
+}
+
+# Rotate daemon logs
+rotate_logs "$LOG_DIR/ordexcoind.log" $MAX_LOG_SIZE $MAX_LOG_FILES
+rotate_logs "$LOG_DIR/ordexgoldd.log" $MAX_LOG_SIZE $MAX_LOG_FILES
+
+# Create wrapper script for log rotation background task
+cat > /tmp/rotate_logs.sh << 'ROTATE_EOF'
+#!/bin/bash
+LOG_DIR="/data/logs"
+MAX_SIZE=10485760
+MAX_FILES=5
+INTERVAL=300  # Check every 5 minutes
+
+while true; do
+    for logfile in ordexcoind.log ordexgoldd.log; do
+        if [ -f "$LOG_DIR/$logfile" ]; then
+            size=$(stat -c%s "$LOG_DIR/$logfile" 2>/dev/null || echo 0)
+            if [ "$size" -gt "$MAX_SIZE" ]; then
+                for i in $(seq $((MAX_FILES - 1)) -1 1); do
+                    [ -f "$LOG_DIR/$logfile.$i" ] && mv "$LOG_DIR/$logfile.$i" "$LOG_DIR/$logfile.$((i + 1))"
+                done
+                mv "$LOG_DIR/$logfile" "$LOG_DIR/$logfile.1"
+                touch "$LOG_DIR/$logfile"
+            fi
+        fi
+    done
+    sleep $INTERVAL
+done
+ROTATE_EOF
+chmod +x /tmp/rotate_logs.sh
+
+# Start log rotation in background
+nohup /tmp/rotate_logs.sh > /dev/null 2>&1 &
+
 # Start ordexcoind in daemon mode (background)
 echo "Starting ordexcoind daemon..."
 ordexcoind -daemon -datadir=/data/blockchain/ordexcoin -conf=/data/config/ordexcoind.conf || true

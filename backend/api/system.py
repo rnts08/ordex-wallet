@@ -9,10 +9,30 @@ import time
 import psutil
 import logging
 from flask import Blueprint, request, jsonify, current_app
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 logger = logging.getLogger(__name__)
 
 system_bp = Blueprint("system", __name__)
+
+# Prometheus metrics
+rpc_calls_total = Counter(
+    "ordexwallet_rpc_calls_total", "Total RPC calls", ["daemon", "method", "status"]
+)
+
+wallet_balance = Gauge("ordexwallet_balance_oxc", "OrdexCoin balance")
+
+wallet_balance_gold = Gauge("ordexwallet_balance_gold", "OrdexGold balance")
+
+daemon_sync_percentage = Gauge(
+    "ordexwallet_daemon_sync_percentage", "Blockchain sync percentage", ["daemon"]
+)
+
+app_requests_total = Counter(
+    "ordexwallet_http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
 
 
 @system_bp.route("/health", methods=["GET"])
@@ -34,8 +54,22 @@ def health_check():
     try:
         sync_status = rpc_manager.get_sync_status()
 
-        ordexcoind_connected = sync_status.get("ordexcoind", {}).get("connected", False)
-        ordexgoldd_connected = sync_status.get("ordexgoldd", {}).get("connected", False)
+        ordexcoind_status = sync_status.get("ordexcoind", {})
+        ordexgoldd_status = sync_status.get("ordexgoldd", {})
+
+        ordexcoind_connected = ordexcoind_status.get("connected", False)
+        ordexgoldd_connected = ordexgoldd_status.get("connected", False)
+
+        # Calculate sync percentage
+        def calc_sync_pct(status):
+            blocks = status.get("blocks", 0)
+            headers = status.get("headers", 0)
+            if headers > 0:
+                return round((blocks / headers) * 100, 2)
+            return 0.0 if blocks == 0 else 100.0
+
+        ordexcoind_sync_pct = calc_sync_pct(ordexcoind_status)
+        ordexgoldd_sync_pct = calc_sync_pct(ordexgoldd_status)
 
         db = current_app.config.get("db_manager")
         has_wallet = False
@@ -53,6 +87,20 @@ def health_check():
                 "daemons": {
                     "ordexcoind": ordexcoind_connected,
                     "ordexgoldd": ordexgoldd_connected,
+                },
+                "sync": {
+                    "ordexcoind": {
+                        "blocks": ordexcoind_status.get("blocks", 0),
+                        "headers": ordexcoind_status.get("headers", 0),
+                        "percentage": ordexcoind_sync_pct,
+                        "syncing": ordexcoind_status.get("syncing", False),
+                    },
+                    "ordexgoldd": {
+                        "blocks": ordexgoldd_status.get("blocks", 0),
+                        "headers": ordexgoldd_status.get("headers", 0),
+                        "percentage": ordexgoldd_sync_pct,
+                        "syncing": ordexgoldd_status.get("syncing", False),
+                    },
                 },
                 "wallet_ready": has_wallet,
                 "timestamp": int(time.time() * 1000),
@@ -205,3 +253,41 @@ def rpc_console():
     except Exception as e:
         logger.error(f"Error executing RPC command: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@system_bp.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        rpc_manager = current_app.config.get("rpc_manager")
+        if rpc_manager:
+            try:
+                # Update balance metrics
+                oxc_balance = rpc_manager.ordexcoind.getbalance()
+                wallet_balance.set(oxc_balance)
+            except:
+                pass
+            try:
+                oxg_balance = rpc_manager.ordexgoldd.getbalance()
+                wallet_balance_gold.set(oxg_balance)
+            except:
+                pass
+
+            # Update sync percentage metrics
+            try:
+                sync_status = rpc_manager.get_sync_status()
+                for daemon in ["ordexcoind", "ordexgoldd"]:
+                    status = sync_status.get(daemon, {})
+                    blocks = status.get("blocks", 0)
+                    headers = status.get("headers", 0)
+                    if headers > 0:
+                        pct = (blocks / headers) * 100
+                    else:
+                        pct = 0.0
+                    daemon_sync_percentage.labels(daemon=daemon).set(pct)
+            except:
+                pass
+    except:
+        pass
+
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}

@@ -262,8 +262,18 @@ class TestSystemAPI(unittest.TestCase):
 
         rpc_mock = Mock()
         rpc_mock.get_sync_status.return_value = {
-            "ordexcoind": {"connected": True},
-            "ordexgoldd": {"connected": True},
+            "ordexcoind": {
+                "connected": True,
+                "blocks": 1000,
+                "headers": 1000,
+                "syncing": False,
+            },
+            "ordexgoldd": {
+                "connected": True,
+                "blocks": 500,
+                "headers": 500,
+                "syncing": False,
+            },
         }
 
         db_mock = Mock()
@@ -284,6 +294,91 @@ class TestSystemAPI(unittest.TestCase):
                         self.assertEqual(response.status_code, 200)
                         data = json.loads(response.get_data(as_text=True))
                     self.assertEqual(data["status"], "healthy")
+                    self.assertIn("sync", data)
+                    self.assertEqual(data["sync"]["ordexcoind"]["percentage"], 100.0)
+                    self.assertEqual(data["sync"]["ordexgoldd"]["percentage"], 100.0)
+
+    def test_health_check_syncing(self):
+        """Test health check when daemons are syncing."""
+        from api.system import health_check
+
+        rpc_mock = Mock()
+        rpc_mock.get_sync_status.return_value = {
+            "ordexcoind": {
+                "connected": True,
+                "blocks": 500,
+                "headers": 1000,
+                "syncing": True,
+            },
+            "ordexgoldd": {
+                "connected": True,
+                "blocks": 250,
+                "headers": 500,
+                "syncing": True,
+            },
+        }
+
+        db_mock = Mock()
+        db_mock.has_wallet.return_value = True
+
+        self.app.config["rpc_manager"] = rpc_mock
+        self.app.config["db_manager"].get_db.return_value = db_mock
+        self.app.config["config_generator"] = Mock()
+
+        with self.app.test_request_context():
+            with patch("api.system.current_app", self.app):
+                response = health_check()
+                if isinstance(response, tuple):
+                    data = json.loads(response[0].get_data(as_text=True))
+                else:
+                    data = json.loads(response.get_data(as_text=True))
+                self.assertEqual(data["status"], "healthy")
+                self.assertEqual(data["sync"]["ordexcoind"]["percentage"], 50.0)
+                self.assertEqual(data["sync"]["ordexgoldd"]["percentage"], 50.0)
+                self.assertTrue(data["sync"]["ordexcoind"]["syncing"])
+                self.assertTrue(data["sync"]["ordexgoldd"]["syncing"])
+
+    def test_health_check_starting(self):
+        """Test health check when app is still starting."""
+        from api.system import health_check
+
+        self.app.config["rpc_manager"] = None
+        self.app.config["db_manager"] = None
+
+        with self.app.test_request_context():
+            with patch("api.system.current_app", self.app):
+                response = health_check()
+                if isinstance(response, tuple):
+                    self.assertEqual(response[1], 503)
+                    data = json.loads(response[0].get_data(as_text=True))
+                else:
+                    self.assertEqual(response.status_code, 503)
+                    data = json.loads(response.get_data(as_text=True))
+                self.assertEqual(data["status"], "starting")
+                self.assertIn("message", data)
+
+    def test_metrics_endpoint(self):
+        """Test Prometheus metrics endpoint."""
+        from api.system import metrics
+        from prometheus_client import CONTENT_TYPE_LATEST
+
+        rpc_mock = Mock()
+        rpc_mock.ordexcoind.getbalance.return_value = 100.5
+        rpc_mock.ordexgoldd.getbalance.return_value = 50.25
+        rpc_mock.get_sync_status.return_value = {
+            "ordexcoind": {"blocks": 1000, "headers": 1000},
+            "ordexgoldd": {"blocks": 500, "headers": 500},
+        }
+
+        self.app.config["rpc_manager"] = rpc_mock
+        self.app.config["config_generator"] = Mock()
+
+        with self.app.test_request_context():
+            with patch("api.system.current_app", self.app):
+                response = metrics()
+                self.assertEqual(response[1], 200)
+                self.assertEqual(response[2]["Content-Type"], CONTENT_TYPE_LATEST)
+                self.assertIn(b"ordexwallet_balance", response[0])
 
     def test_health_check_unhealthy(self):
         """Test health check when not connected."""
