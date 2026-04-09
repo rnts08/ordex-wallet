@@ -21,11 +21,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initApp() {
+    const overlay = document.getElementById('loading-overlay');
+    const statusEl = document.getElementById('loading-status');
+    
     try {
-        const health = await ApiService.getHealth();
+        statusEl.textContent = 'Checking system status...';
+        let health = await ApiService.getHealth();
+        
+        // Wait for app to be ready (not starting state)
+        let attempts = 0;
+        while (health.status === 'starting' && attempts < 60) {
+            statusEl.textContent = `Waiting for daemons... (${attempts + 1}/60)`;
+            await new Promise(r => setTimeout(r, 1000));
+            health = await ApiService.getHealth();
+            attempts++;
+        }
+        
+        if (health.status === 'unhealthy') {
+            statusEl.textContent = 'System error - please check daemon status';
+            overlay.classList.add('hidden');
+            showPage('system');
+            return;
+        }
+        
+        statusEl.textContent = health.wallet_ready ? 'Loading wallet data...' : 'Setting up wallet...';
         
         if (!health.wallet_ready) {
             showPage('wallet-setup');
+            overlay.classList.add('hidden');
             return;
         }
         
@@ -33,9 +56,19 @@ async function initApp() {
         await loadDashboardData();
         startAutoRefresh();
         
+        // Hide loading overlay
+        statusEl.textContent = 'Ready!';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 500);
+        
     } catch (e) {
         console.error('Failed to initialize:', e);
-        showPage('wallet-setup');
+        statusEl.textContent = 'Connection error - check system';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            showPage('wallet-setup');
+        }, 2000);
     }
 }
 

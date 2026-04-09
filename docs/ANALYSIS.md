@@ -5,49 +5,40 @@
 ### Critical Issues
 
 #### 1. Daemon Startup Race Condition
-**Severity**: High
+**Status**: FIXED
 **Description**: Flask starts immediately after daemon start command, but daemons may not be ready to accept RPC connections. The 5-second sleep may not be sufficient on slow systems or during initial blockchain download.
-**Impact**: Initial RPC calls may fail until daemons fully initialize.
-**Mitigation**: Application retries RPC calls with exponential backoff.
+**Fix**: Added daemon readiness check in entrypoint.sh using Python socket check, waits up to 60 seconds for daemons to become available. Added frontend loading spinner while waiting.
 
 #### 2. Wallet Loading Not Persisted
-**Severity**: Medium
+**Status**: FIXED
 **Description**: Each container restart re-loads the wallet, which may cause address history to not load immediately.
-**Impact**: First request after restart may show empty wallet until daemon syncs.
-**Workaround**: Daemon wallet is auto-loaded on each startup via `loadwallet("wallet")`.
+**Fix**: Improved logging - now logs info "Wallet already exists for X, loading..." instead of ERROR. Health endpoint returns proper status during initialization.
 
 ### Logical Errors
 
 #### 3. Hardcoded RPC Fallback Credentials
-**Severity**: Medium
-**Location**: `backend/app.py:56-70`
+**Status**: FIXED
 **Description**: If config generation fails, the app falls back to hardcoded "ordexuser"/"changeme" credentials that won't work.
-```python
-"username": os.environ.get("RPC_USER", "ordexuser"),
-"password": os.environ.get("RPC_PASSWORD", "changeme"),
-```
-**Impact**: App will fail to connect if config generation fails.
-**Fix**: Remove fallback or use config generator defaults.
+**Fix**: Removed hardcoded fallback. App now fails with clear error if config cannot be loaded.
 
 #### 4. Inconsistent Port Configuration
-**Severity**: Low
+**Status**: INFO (by design)
 **Description**: 
 - Standalone Docker: internal port 5000, external 15000
 - Umbriel: internal port 15000
-**Impact**: Confusion when debugging or connecting directly.
-**Note**: Both expose 15000 externally but Flask listens on different internal ports.
+**Note**: Both expose 15000 externally but Flask listens on different internal ports. Documented in README.
 
 #### 5. Daemon Path Resolution
-**Severity**: Medium
+**Status**: FIXED
 **Description**: Entry script copies daemons from `/data/bin` but doesn't verify the source location exists first.
-**Impact**: Fails silently if volume mount missing; daemons from Docker image take precedence.
-**Fix**: Add explicit check for daemon availability.
+**Fix**: Added explicit daemon binary verification in entrypoint.sh with clear error messages.
 
 ### Operations Issues
 
 #### 6. Blockchain Sync Time
-**Severity**: Informational
+**Status**: INFO
 **Description**: Initial blockchain download can take hours depending on network and chain size.
+**Note**: Expected behavior for full node operation.
 **Impact**: Wallet won't show balances until synced.
 **Monitoring**: Use `getblockchaininfo` via RPC console to check sync progress.
 
@@ -101,9 +92,9 @@
 ## Data Integrity
 
 ### 15. Database Corruption Risk
+**Status**: FIXED
 **Description**: SQLite database not using WAL mode, may corrupt on unclean shutdown.
-**Impact**: Potential data loss.
-**Fix**: Enable WAL mode in DatabaseManager.
+**Fix**: WAL mode already enabled in DatabaseManager (`PRAGMA journal_mode=WAL`).
 
 ### 16. Config File Race Condition
 **Description**: Multiple containers starting simultaneously could both try to generate config.
