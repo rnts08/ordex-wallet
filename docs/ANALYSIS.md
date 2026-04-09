@@ -17,35 +17,28 @@
 ### Logical Errors
 
 #### 3. Hardcoded RPC Fallback Credentials
-**Severity**: Medium
-**Location**: `backend/app.py:56-70`
+**Status**: FIXED
 **Description**: If config generation fails, the app falls back to hardcoded "ordexuser"/"changeme" credentials that won't work.
-```python
-"username": os.environ.get("RPC_USER", "ordexuser"),
-"password": os.environ.get("RPC_PASSWORD", "changeme"),
-```
-**Impact**: App will fail to connect if config generation fails.
-**Fix**: Remove fallback or use config generator defaults.
+**Fix**: Removed hardcoded fallback. App now fails with clear error if config cannot be loaded.
 
 #### 4. Inconsistent Port Configuration
-**Status**: INFO
+**Status**: INFO (by design)
 **Description**: 
 - Standalone Docker: internal port 5000, external 15000
 - Umbriel: internal port 15000
-**Impact**: Confusion when debugging or connecting directly.
-**Note**: Both expose 15000 externally but Flask listens on different internal ports. This is by design for Umbriel compatibility. Documented in README.
+**Note**: Both expose 15000 externally but Flask listens on different internal ports. Documented in README.
 
 #### 5. Daemon Path Resolution
-**Severity**: Medium
+**Status**: FIXED
 **Description**: Entry script copies daemons from `/data/bin` but doesn't verify the source location exists first.
-**Impact**: Fails silently if volume mount missing; daemons from Docker image take precedence.
-**Fix**: Add explicit check for daemon availability.
+**Fix**: Added explicit daemon binary verification in entrypoint.sh with clear error messages.
 
 ### Operations Issues
 
 #### 6. Blockchain Sync Time
-**Severity**: Informational
+**Status**: INFO
 **Description**: Initial blockchain download can take hours depending on network and chain size.
+**Note**: Expected behavior for full node operation.
 **Impact**: Wallet won't show balances until synced.
 **Monitoring**: Use `getblockchaininfo` via RPC console to check sync progress.
 
