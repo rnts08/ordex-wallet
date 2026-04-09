@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ordex-web-wallet/backend /app/ordex_web_wallet
 COPY ordex-web-wallet/scripts /app/scripts
+COPY ordex-web-wallet/frontend /app/frontend
 
 RUN mkdir -p /data/{blocks,chainstate,wallets,backups,logs}
 

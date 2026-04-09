@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 
 from ordex_web_wallet.config import config
@@ -21,15 +21,15 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(system_bp, url_prefix="/api/system")
 
+    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
     @app.route("/")
     def index():
-        return jsonify(
-            {
-                "name": "Ordex Web Wallet",
-                "version": "1.0.0",
-                "status": "running",
-            }
-        )
+        return send_from_directory(frontend_path, "index.html")
+
+    @app.route("/<path:filename>")
+    def serve_static(filename):
+        return send_from_directory(frontend_path, filename)
 
     return app
 
