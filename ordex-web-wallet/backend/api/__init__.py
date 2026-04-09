@@ -8,26 +8,6 @@ def health():
     state = {"status": "healthy", "services": {}}
 
     try:
-        from ordex_web_wallet.rpc import daemon_manager
-
-        oxc_info = daemon_manager.oxc.getblockchaininfo()
-        state["services"]["ordexcoind"] = {
-            "status": "healthy",
-            "blocks": oxc_info.get("blocks", 0),
-        }
-    except Exception as e:
-        state["services"]["ordexcoind"] = {"status": "unhealthy", "error": str(e)}
-
-    try:
-        oxg_info = daemon_manager.oxg.getblockchaininfo()
-        state["services"]["ordexgoldd"] = {
-            "status": "healthy",
-            "blocks": oxg_info.get("blocks", 0),
-        }
-    except Exception as e:
-        state["services"]["ordexgoldd"] = {"status": "unhealthy", "error": str(e)}
-
-    try:
         from ordex_web_wallet.database import DATABASE
 
         DATABASE.execute_one("SELECT 1")
@@ -35,6 +15,30 @@ def health():
     except Exception as e:
         state["services"]["database"] = {"status": "unhealthy", "error": str(e)}
         state["status"] = "degraded"
+
+    try:
+        from ordex_web_wallet.rpc import daemon_manager
+
+        ctx = daemon_manager.get_context("ordexcoin")
+        info = ctx.call("getblockchaininfo")
+        state["services"]["ordexcoind"] = {
+            "status": "healthy",
+            "blocks": info.get("blocks", 0) if info else 0,
+        }
+    except Exception as e:
+        state["services"]["ordexcoind"] = {"status": "unhealthy", "error": str(e)[:50]}
+
+    try:
+        from ordex_web_wallet.rpc import daemon_manager
+
+        ctx = daemon_manager.get_context("ordexgold")
+        info = ctx.call("getblockchaininfo")
+        state["services"]["ordexgoldd"] = {
+            "status": "healthy",
+            "blocks": info.get("blocks", 0) if info else 0,
+        }
+    except Exception as e:
+        state["services"]["ordexgoldd"] = {"status": "unhealthy", "error": str(e)[:50]}
 
     return jsonify(state)
 

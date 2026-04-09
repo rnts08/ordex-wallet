@@ -211,6 +211,29 @@
 
     window.showPage = showPage;
 
+    function checkServices() {
+        fetch(API_BASE + '/system/health')
+            .then(r => r.json())
+            .then(data => {
+                const statusEl = document.getElementById('loading-status');
+                const services = data.services || {};
+                const dbHealthy = services.database?.status === 'healthy';
+                
+                if (dbHealthy) {
+                    showLoading(false);
+                    if (statusEl) statusEl.textContent = 'Ready';
+                } else {
+                    if (statusEl) statusEl.textContent = 'Connecting database...';
+                    setTimeout(checkServices, 3000);
+                }
+            })
+            .catch(() => {
+                const statusEl = document.getElementById('loading-status');
+                if (statusEl) statusEl.textContent = 'Connecting...';
+                setTimeout(checkServices, 3000);
+            });
+    }
+
     if (authToken) {
         updateNav();
         showPage('dashboard');
@@ -218,4 +241,6 @@
     } else {
         showPage('home');
     }
+    
+    checkServices();
 })();
