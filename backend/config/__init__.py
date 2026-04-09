@@ -50,9 +50,8 @@ class ConfigGenerator:
 
     @staticmethod
     def generate_secure_password(length: int = 32) -> str:
-        """Generate a cryptographically secure password (safe for config files)."""
-        alphabet = string.ascii_letters + string.digits
-        return "".join(secrets.choice(alphabet) for _ in range(length))
+        """Generate a cryptographically secure password using token_urlsafe for better entropy."""
+        return secrets.token_urlsafe(length)
 
     @staticmethod
     def generate_rpc_credentials() -> Dict[str, str]:
