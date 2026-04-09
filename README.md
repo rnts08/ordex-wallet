@@ -176,22 +176,16 @@ docker compose up -d
 The project uses git tags for stable release management:
 
 ```bash
-# Create a release tag
-git tag -a v1.0.0 -m "Stable release v1.0.0"
+# Checkout the latest release
+git checkout v1.1.0
 
-# Push tag to remote
-git push origin v1.0.0
-
-# List all releases
-git tag -l
-
-# Checkout a specific release
-git checkout v1.0.0
+# Or checkout the main branch for development
+git checkout main
 ```
 
 ### Release Versioning
 
-- **Tags format**: `vX.Y.Z` (e.g., v1.0.0)
+- **Tags format**: `vX.Y.Z` (e.g., v1.1.0)
 - **Version meaning**:
   - X: Major version (breaking changes)
   - Y: Minor version (new features)

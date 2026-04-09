@@ -8,6 +8,7 @@ OrdexWallet uses semantic versioning with git tags:
 
 | Tag | Description |
 |-----|-------------|
+| `v1.1.0` | Feature release - health checks, Prometheus metrics, log rotation |
 | `v1.0.0` | Initial stable release |
 
 ## Finding Releases
@@ -22,10 +23,10 @@ git fetch --tags
 git tag -l
 
 # View specific release
-git show v1.0.0
+git show v1.1.0
 
 # Checkout a release
-git checkout v1.0.0
+git checkout v1.1.0
 ```
 
 ### Daemon Releases
@@ -39,6 +40,7 @@ The daemon binaries are managed separately and auto-downloaded during Docker bui
 
 | OrdexWallet | OrdexCoin | OrdexGold |
 |-------------|-----------|-----------|
+| v1.1.0 | V.25.0 | V.0.21.04 |
 | v1.0.0 | V.25.0 | V.0.21.04 |
 
 ## Updating to a Specific Release
@@ -53,7 +55,7 @@ git fetch --tags
 git tag -l
 
 # Checkout specific version
-git checkout v1.0.0
+git checkout v1.1.0
 
 # Rebuild
 cd docker
@@ -95,7 +97,7 @@ When creating a new release:
 
 ## Current Stable Release
 
-- **Version**: v1.0.0
+- **Version**: v1.1.0
 - **OrdexCoin**: V.25.0
 - **OrdexGold**: V.0.21.04
 

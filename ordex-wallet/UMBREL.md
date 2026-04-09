@@ -87,7 +87,7 @@ cp -r /path/to/ordex-wallet ordex-wallet/
 
 # Commit
 git add .
-git commit -m "Add OrdexWallet v1.0.0"
+git commit -m "Add OrdexWallet v1.1.0"
 git push -u origin add-ordex-wallet
 ```
 
