@@ -34,8 +34,22 @@ def health_check():
     try:
         sync_status = rpc_manager.get_sync_status()
 
-        ordexcoind_connected = sync_status.get("ordexcoind", {}).get("connected", False)
-        ordexgoldd_connected = sync_status.get("ordexgoldd", {}).get("connected", False)
+        ordexcoind_status = sync_status.get("ordexcoind", {})
+        ordexgoldd_status = sync_status.get("ordexgoldd", {})
+
+        ordexcoind_connected = ordexcoind_status.get("connected", False)
+        ordexgoldd_connected = ordexgoldd_status.get("connected", False)
+
+        # Calculate sync percentage
+        def calc_sync_pct(status):
+            blocks = status.get("blocks", 0)
+            headers = status.get("headers", 0)
+            if headers > 0:
+                return round((blocks / headers) * 100, 2)
+            return 0.0 if blocks == 0 else 100.0
+
+        ordexcoind_sync_pct = calc_sync_pct(ordexcoind_status)
+        ordexgoldd_sync_pct = calc_sync_pct(ordexgoldd_status)
 
         db = current_app.config.get("db_manager")
         has_wallet = False
@@ -53,6 +67,20 @@ def health_check():
                 "daemons": {
                     "ordexcoind": ordexcoind_connected,
                     "ordexgoldd": ordexgoldd_connected,
+                },
+                "sync": {
+                    "ordexcoind": {
+                        "blocks": ordexcoind_status.get("blocks", 0),
+                        "headers": ordexcoind_status.get("headers", 0),
+                        "percentage": ordexcoind_sync_pct,
+                        "syncing": ordexcoind_status.get("syncing", False),
+                    },
+                    "ordexgoldd": {
+                        "blocks": ordexgoldd_status.get("blocks", 0),
+                        "headers": ordexgoldd_status.get("headers", 0),
+                        "percentage": ordexgoldd_sync_pct,
+                        "syncing": ordexgoldd_status.get("syncing", False),
+                    },
                 },
                 "wallet_ready": has_wallet,
                 "timestamp": int(time.time() * 1000),
