@@ -101,9 +101,9 @@
 ## Data Integrity
 
 ### 15. Database Corruption Risk
+**Status**: FIXED
 **Description**: SQLite database not using WAL mode, may corrupt on unclean shutdown.
-**Impact**: Potential data loss.
-**Fix**: Enable WAL mode in DatabaseManager.
+**Fix**: WAL mode already enabled in DatabaseManager (`PRAGMA journal_mode=WAL`).
 
 ### 16. Config File Race Condition
 **Description**: Multiple containers starting simultaneously could both try to generate config.

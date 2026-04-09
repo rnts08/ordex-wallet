@@ -50,24 +50,12 @@ def create_app(config_dir: str = None, data_dir: str = None) -> Flask:
         app.config["config_generator"] = config_generator
         app.config["app_config"] = config_generator.load_config()
     except Exception as e:
-        logger.warning(f"Could not initialize config: {e}")
+        logger.error(f"Could not initialize config: {e}")
         app.config["config_generator"] = None
-        app.config["app_config"] = {
-            "daemons": {
-                "ordexcoind": {
-                    "host": "ordexcoind",
-                    "port": int(os.environ.get("ORDEXCOIND_RPC_PORT", 17523)),
-                    "username": os.environ.get("RPC_USER", "ordexuser"),
-                    "password": os.environ.get("RPC_PASSWORD", "changeme"),
-                },
-                "ordexgoldd": {
-                    "host": "ordexgoldd",
-                    "port": int(os.environ.get("ORDEXGOLDD_RPC_PORT", 17524)),
-                    "username": os.environ.get("RPC_USER", "ordexuser"),
-                    "password": os.environ.get("RPC_PASSWORD", "changeme"),
-                },
-            }
-        }
+        app.config["app_config"] = None
+        logger.error(
+            "App cannot start without valid config. Please check daemon configuration."
+        )
 
     try:
         db_manager = DatabaseManager(data_dir)
