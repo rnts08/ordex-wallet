@@ -26,6 +26,7 @@ class CLIContext:
         rpc_pass: str = None,
         rpc_port: int = None,
         data_dir: str = "/data",
+        rpc_host: str = "127.0.0.1",
     ):
         self.cli_path = cli_path
         self.chain = chain
@@ -34,6 +35,7 @@ class CLIContext:
         self.rpc_pass = rpc_pass or os.getenv("RPC_PASS", "")
         self.rpc_port = rpc_port or (5332 if chain == "ordexcoin" else 5333)
         self.data_dir = data_dir
+        self.rpc_host = rpc_host
 
     def _build_cmd(self, method: str, *args) -> list:
         cmd = [
@@ -41,6 +43,7 @@ class CLIContext:
             f"-rpcuser={self.rpc_user}",
             f"-rpcpassword={self.rpc_pass}",
             f"-rpcport={self.rpc_port}",
+            f"-rpcconnect={self.rpc_host}",
             f"-datadir={self.data_dir}",
         ]
         if self.wallet_name:
@@ -92,7 +95,13 @@ class DaemonManager:
         self.oxg_port = int(os.getenv("OGRPC_PORT", "5333"))
 
     def get_context(self, chain: str, wallet_name: str = None) -> CLIContext:
+        import os
+
         port = self.oxc_port if chain == "ordexcoin" else self.oxg_port
+        # Use daemon container hostname, default to localhost for local dev
+        host = os.getenv(
+            "RPC_HOST", "ordexcoind" if chain == "ordexcoin" else "ordexgoldd"
+        )
         return CLIContext(
             self.cli_path,
             chain,
@@ -100,6 +109,8 @@ class DaemonManager:
             self.rpc_user,
             self.rpc_pass,
             port,
+            self.data_dir,
+            host,
         )
 
     def create_user_wallet(
