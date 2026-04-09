@@ -81,12 +81,23 @@ def create_app(config_dir: str = None, data_dir: str = None) -> Flask:
                         except Exception as e:
                             if "Database already exists" in str(e):
                                 logger.info(
-                                    f"Wallet already exists for {client.daemon_name}, loading..."
+                                    f"Wallet already exists for {client.daemon_name}"
                                 )
                             else:
                                 raise
-                    client.loadwallet("wallet")
-                    logger.info(f"Loaded wallet for {client.daemon_name}")
+
+                    # Try to load wallet (may already be loaded)
+                    try:
+                        client.loadwallet("wallet")
+                        logger.info(f"Loaded wallet for {client.daemon_name}")
+                    except Exception as e:
+                        if "is already loaded" in str(e):
+                            logger.info(
+                                f"Wallet already loaded for {client.daemon_name}"
+                            )
+                        else:
+                            raise
+
                 except Exception as e:
                     logger.warning(f"Wallet init error for {client.daemon_name}: {e}")
         except Exception as e:
