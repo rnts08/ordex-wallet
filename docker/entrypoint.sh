@@ -5,9 +5,23 @@ echo "=========================================="
 echo "Starting OrdexWallet..."
 echo "=========================================="
 
+# Get user info for proper permissions (from docker-compose user or default)
+if [ -n "$USER_ID" ]; then
+    USE_USER=$USER_ID
+    USE_GROUP=$GROUP_ID
+else
+    USE_USER=$(id -u)
+    USE_GROUP=$(id -g)
+fi
+echo "Running with user ID: $USE_USER, group ID: $USE_GROUP"
+
 # All data stored in /data (blockchain, config, database, logs)
 echo "Initializing data directories..."
 mkdir -p /data/{config,blockchain/ordexcoin,blockchain/ordexgold,logs,backups}
+
+# Ensure proper ownership for the running user
+echo "Setting directory ownership to $USE_USER:$USE_GROUP..."
+chown -R $USE_USER:$USE_GROUP /data 2>/dev/null || true
 
 # Verify daemon binaries are available
 echo "Checking daemon binaries..."
@@ -62,6 +76,10 @@ else:
     print('Configuration already exists.')
 "
 fi
+
+# Ensure config files have proper permissions
+chown $USE_USER:$USE_GROUP /data/config/*.conf 2>/dev/null || true
+chmod 600 /data/config/*.conf 2>/dev/null || true
 
 # Start ordexcoind in daemon mode (background)
 echo "Starting ordexcoind daemon..."
