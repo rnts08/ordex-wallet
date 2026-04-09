@@ -86,10 +86,48 @@
         showLoading();
         hideError('register-error');
         
-        const username = document.getElementById('register-username').value;
-        const email = document.getElementById('register-email').value;
+        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
         const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('register-confirm-password').value;
         const passphrase = document.getElementById('register-passphrase').value;
+        
+        // Frontend validation
+        if (password !== confirmPassword) {
+            showError('register-error', 'Passwords do not match');
+            showLoading(false);
+            return;
+        }
+        
+        if (password.length < 8) {
+            showError('register-error', 'Password must be at least 8 characters');
+            showLoading(false);
+            return;
+        }
+        
+        if (!/[A-Z]/.test(password)) {
+            showError('register-error', 'Password must contain at least one uppercase letter');
+            showLoading(false);
+            return;
+        }
+        
+        if (!/[a-z]/.test(password)) {
+            showError('register-error', 'Password must contain at least one lowercase letter');
+            showLoading(false);
+            return;
+        }
+        
+        if (!/\d/.test(password)) {
+            showError('register-error', 'Password must contain at least one number');
+            showLoading(false);
+            return;
+        }
+        
+        if (passphrase.length < 8) {
+            showError('register-error', 'Passphrase must be at least 8 characters');
+            showLoading(false);
+            return;
+        }
         
         const res = await apiRequest('/auth/register', {
             method: 'POST',

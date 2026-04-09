@@ -39,15 +39,7 @@
 
     <main class="container">
         <section id="page-home" class="page">
-            <div class="hero" style="background: url('ordexnetwork.png') no-repeat center top; background-size: 120px; padding-top: 140px;">
-                <h1>Ordex Web Wallet</h1>
-                <p class="hero-subtitle">Secure multi-user wallet for OrdexCoin and OrdexGold</p>
-                <div class="hero-buttons">
-                    <a href="#register" class="btn btn-primary" onclick="showPage('register')">Get Started</a>
-                    <a href="#login" class="btn btn-secondary" onclick="showPage('login')">Login</a>
-                </div>
-            </div>
-            <div class="features">
+            <div class="features" style="margin-top: 80px;">
                 <div class="feature">
                     <h3>Secure</h3>
                     <p>Your wallets are encrypted with your personal passphrase</p>
@@ -88,7 +80,8 @@
                 <form onsubmit="handleRegister(event)">
                     <div class="form-group">
                         <label>Username</label>
-                        <input type="text" id="register-username" class="form-input" required minlength="3">
+                        <input type="text" id="register-username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+">
+                        <small>3-30 characters, letters, numbers, underscore only</small>
                     </div>
                     <div class="form-group">
                         <label>Email</label>
@@ -96,8 +89,12 @@
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="register-password" class="form-input" required minlength="8">
-                        <small>At least 8 characters</small>
+                        <input type="password" id="register-password" class="form-input" required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}">
+                        <small>At least 8 characters with uppercase, lowercase, and number</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="register-confirm-password" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label>Wallet Passphrase</label>

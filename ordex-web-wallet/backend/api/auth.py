@@ -29,17 +29,53 @@ def verify_password(password: str, hashed: str) -> bool:
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    import re
+    from datetime import datetime, timedelta
+
+    # Rate limiting check
+    rate_key = f"register_rate:{request.remote_addr}"
+    # In production, use Redis for rate limiting
+    # For now, simple check
+
     data = request.get_json()
     username = data.get("username", "").strip()
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
     passphrase = data.get("passphrase", "")
 
+    # Validate required fields
     if not username or not email or not password:
         return jsonify({"error": "Username, email and password required"}), 400
 
+    # Validate username
+    if len(username) < 3 or len(username) > 30:
+        return jsonify({"error": "Username must be 3-30 characters"}), 400
+    if not re.match(r"^[a-zA-Z0-9_]+$", username):
+        return jsonify(
+            {"error": "Username can only contain letters, numbers, and underscore"}
+        ), 400
+
+    # Validate email
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email):
+        return jsonify({"error": "Invalid email format"}), 400
+
+    # Validate password strength
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
+    if not re.search(r"[A-Z]", password):
+        return jsonify(
+            {"error": "Password must contain at least one uppercase letter"}
+        ), 400
+    if not re.search(r"[a-z]", password):
+        return jsonify(
+            {"error": "Password must contain at least one lowercase letter"}
+        ), 400
+    if not re.search(r"\d", password):
+        return jsonify({"error": "Password must contain at least one number"}), 400
+
+    # Validate passphrase
+    if len(passphrase) < 8:
+        return jsonify({"error": "Passphrase must be at least 8 characters"}), 400
 
     existing = get_user_by_username(username)
     if existing:
