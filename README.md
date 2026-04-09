@@ -11,39 +11,9 @@ git clone https://github.com/rnts08/ordex-wallet.git
 cd ordex-wallet
 ```
 
-### 2. Checkout Specific Version (Recommended)
+### 2. Start the Wallet (Daemons Auto-Download)
 
-```bash
-# Checkout the latest stable release
-git checkout v1.0.0
-
-# Or checkout the main branch for development
-git checkout main
-```
-
-### 3. Download Daemon Binaries
-
-```bash
-# Create bin directory if it doesn't exist
-mkdir -p bin
-
-# Download and setup OrdexCoin daemon
-wget https://github.com/OrdexCoin/Ordexcoin-Core/releases/download/V.25.0/ordexcoin-25.0-linux.tar.gz
-tar -xzf ordexcoin-25.0-linux.tar.gz
-mv ordexcoin-25.0/bin/ordexcoind bin/ordexcoind
-chmod +x bin/ordexcoind
-
-# Download and setup OrdexGold daemon  
-wget https://github.com/OrdexCoin/OrdexGold-Core/releases/download/V.0.21.04/ordexgold-0.21.4-linux.tar.gz
-tar -xzf ordexgold-0.21.4-linux.tar.gz
-mv ordexgold-0.21.4/bin/ordexgoldd bin/ordexgoldd
-chmod +x bin/ordexgoldd
-
-# Clean up downloaded archives
-rm ordexcoin-25.0-linux.tar.gz ordexgold-0.21.4-linux.tar.gz
-```
-
-### 4. Start the Wallet
+The daemon binaries are automatically downloaded during the Docker build if not present in the `bin/` directory.
 
 ```bash
 cd docker
@@ -51,6 +21,23 @@ docker compose up -d
 ```
 
 The wallet will be available at `http://localhost:15000`
+
+## Deployment Options
+
+### Standalone Docker (Recommended for Local/Self-Hosted)
+
+```bash
+cd docker
+docker compose up -d
+```
+
+Access at: `http://localhost:15000`
+
+### Umbriel App Store
+
+See [UMBREL.md](./ordex-wallet/UMBREL.md) for publishing instructions.
+
+The codebase is shared between both deployment options - `backend/`, `frontend/`, and `bin/` are used by both.
 
 ## Features
 
@@ -71,40 +58,14 @@ The wallet will be available at `http://localhost:15000`
 
 ## Prerequisites
 
-Before running OrdexWallet, you need to download the daemon binaries:
-
-1. **OrdexCoin Daemon (ordexcoind)**
-   - Download: [OrdexCoin-Core V.25.0 (Linux)](https://github.com/OrdexCoin/Ordexcoin-Core/releases/tag/V.25.0)
-   - Extract and rename to `ordexcoind`
-   - Place in the `bin/` folder
-
-2. **OrdexGold Daemon (ordexgoldd)**
-   - Download: [OrdexGold-Core V.0.21.04 (Linux)](https://github.com/OrdexCoin/OrdexGold-Core/releases/tag/V.0.21.04)
-   - Extract and rename to `ordexgoldd`
-   - Place in the `bin/` folder
-
-```bash
-# Example: After downloading and extracting
-mv ordexcoind-25.0/bin/ordexcoind bin/ordexcoind
-mv ordexgoldd-0.21.4/bin/ordexgoldd bin/ordexgoldd
-chmod +x bin/ordexcoind bin/ordexgoldd
-```
-
-## Quick Start
-
-```bash
-cd docker
-docker compose up -d
-```
-
-The wallet will be available at `http://localhost:15000`
-
-## Requirements
-
 - Docker Engine 20.10+
 - Docker Compose v2+
 - 2GB+ RAM recommended
 - 10GB+ storage for blockchain data
+
+**Daemon Binaries**: Automatically downloaded during Docker build from:
+- OrdexCoin: https://github.com/OrdexCoin/Ordexcoin-Core/releases/download/V.25.0/ordexcoin-25.0-linux.tar.gz
+- OrdexGold: https://github.com/OrdexCoin/OrdexGold-Core/releases/download/V.0.21.04/ordexgold-0.21.4-linux.tar.gz
 
 ## Configuration
 
@@ -112,7 +73,7 @@ The wallet will be available at `http://localhost:15000`
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | 5000 | Flask server port |
+| `PORT` | 5000 | Flask server port (internal) |
 | `HOST` | 0.0.0.0 | Flask server host |
 | `CONFIG_DIR` | /data/config | Daemon config directory |
 | `DATA_DIR` | /data | Data storage directory |
@@ -134,6 +95,7 @@ All data persists in the `ordexwallet_data` Docker volume:
 - `/data/ordexwallet.db` - Application database
 - `/data/backups` - Wallet backups
 - `/data/logs` - Application logs
+- `/data/bin` - Daemon binaries (mounted from host)
 
 ## Operations
 
@@ -147,6 +109,7 @@ docker compose up -d
 ### Stopping the Wallet
 
 ```bash
+cd docker
 docker compose down
 ```
 
@@ -194,39 +157,19 @@ docker compose up -d
 
 ### Upgrading Daemon Binaries
 
-When new versions of the daemons are released:
+The Docker build automatically downloads the latest daemon versions. To force an upgrade:
 
-1. **Stop the container**
-   ```bash
-   cd docker
-   docker compose down
-   ```
+```bash
+cd docker
+docker compose down
 
-2. **Download new binaries**
-   - [OrdexCoin-Core Releases](https://github.com/OrdexCoin/Ordexcoin-Core/releases)
-   - [OrdexGold-Core Releases](https://github.com/OrdexCoin/OrdexGold-Core/releases)
+# Remove old daemons (build will re-download)
+rm bin/ordexcoind bin/ordexgoldd
 
-3. **Replace binaries**
-   ```bash
-   # Backup old binaries (optional)
-   mv bin/ordexcoind bin/ordexcoind.old
-   mv bin/ordexgoldd bin/ordexgoldd.old
-
-   # Install new binaries
-   mv new-ordexcoind bin/ordexcoind
-   mv new-ordexgoldd bin/ordexgoldd
-   chmod +x bin/ordexcoind bin/ordexgoldd
-   ```
-
-4. **Start the wallet**
-   ```bash
-   docker compose up -d
-   ```
-
-5. **Monitor for issues**
-   ```bash
-   docker compose logs -f
-   ```
+# Rebuild (daemons will be auto-downloaded)
+docker compose build --no-cache
+docker compose up -d
+```
 
 ### Creating Stable Releases
 
@@ -311,6 +254,27 @@ getblockchaininfo
 5. Optionally customize the fee
 6. Click "Send Transaction"
 7. Confirm the transaction
+
+## Directory Structure
+
+```
+ordex-wallet/
+├── backend/          # Python Flask application (shared)
+├── frontend/         # Web UI files (shared)
+├── bin/              # Daemon binaries (shared)
+├── docker/           # Standalone Docker deployment
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── entrypoint.sh
+├── ordex-wallet/     # Umbriel App Store format
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── umbrel-app.yml
+│   └── exports.sh
+├── README.md         # This file
+├── RELEASES.md       # Release notes
+└── UMBREL.md         # Umbriel publishing guide
+```
 
 ## External Links
 

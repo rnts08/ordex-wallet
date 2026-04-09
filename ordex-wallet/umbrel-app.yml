@@ -1,0 +1,27 @@
+manifestVersion: 1
+id: ordex-wallet
+category: finance
+name: OrdexWallet
+version: "1.0.0"
+tagline: Self-hosted web wallet for OrdexCoin and OrdexGold
+description: >-
+  OrdexWallet is a complete custodial web wallet for OrdexNetwork that supports both OrdexCoin (OXC) and OrdexGold (OXG). 
+  Run your own self-hosted wallet with local daemon binaries, providing secure storage and management of your digital assets.
+  Features include real-time balance display, transaction management, wallet backup/restore, and daemon configuration.
+  
+  **Note**: Currently supports x86/x64 platforms only. ARM platforms require manual compilation of ordexcoind and ordexgoldd daemons.
+releaseNotes: >-
+  Initial release for OrdexWallet v1.0.0. Complete custodial web wallet with support for OXC and OXG chains.
+  Includes dashboard, wallet management, transactions, backup/restore, and system management features.
+developer: OrdexNetwork
+website: https://ordexnetwork.org
+dependencies: []
+repo: https://github.com/OrdexCoin/ordex-wallet
+support: https://github.com/OrdexCoin/ordex-wallet/issues
+port: 15000
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: OrdexNetwork
+submission: https://github.com/getumbrel/umbrel-apps/pull/new

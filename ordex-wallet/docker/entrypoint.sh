@@ -26,7 +26,7 @@ if [ ! -f /data/config/ordexcoind.conf ] || [ ! -f /data/config/ordexgoldd.conf 
     echo "Generating configuration files..."
     python -c "
 import sys
-sys.path.insert(0, '.')
+sys.path.insert(0, '/app')
 from config import ConfigGenerator
 gen = ConfigGenerator('/data/config', '/data')
 if gen.is_first_startup():
@@ -50,4 +50,5 @@ sleep 5
 
 # Start Flask
 echo "Starting Flask application (daemons will sync in background)..."
+cd /app
 python -c "import app; app.main()"
