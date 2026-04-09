@@ -112,11 +112,12 @@ Before release, verify:
 
 Planned enhancements (not bugs):
 
-1. **Prometheus metrics endpoint** - For monitoring
-2. **Implement log rotation** - Internal rotation with size limits
-3. **Hardware wallet integration** - Long-term feature
-4. **Multi-signature wallet support** - Long-term feature
-5. **Lightning Network integration** - Future OXC feature
+1. ~~Add sync percentage to health check~~ - COMPLETED
+2. ~~Prometheus metrics endpoint~~ - COMPLETED
+3. **Implement log rotation** - Internal rotation with size limits
+4. **Hardware wallet integration** - Long-term feature
+5. **Multi-signature wallet support** - Long-term feature
+6. **Lightning Network integration** - Future OXC feature
 
 ---
 

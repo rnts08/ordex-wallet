@@ -357,6 +357,29 @@ class TestSystemAPI(unittest.TestCase):
                 self.assertEqual(data["status"], "starting")
                 self.assertIn("message", data)
 
+    def test_metrics_endpoint(self):
+        """Test Prometheus metrics endpoint."""
+        from api.system import metrics
+        from prometheus_client import CONTENT_TYPE_LATEST
+
+        rpc_mock = Mock()
+        rpc_mock.ordexcoind.getbalance.return_value = 100.5
+        rpc_mock.ordexgoldd.getbalance.return_value = 50.25
+        rpc_mock.get_sync_status.return_value = {
+            "ordexcoind": {"blocks": 1000, "headers": 1000},
+            "ordexgoldd": {"blocks": 500, "headers": 500},
+        }
+
+        self.app.config["rpc_manager"] = rpc_mock
+        self.app.config["config_generator"] = Mock()
+
+        with self.app.test_request_context():
+            with patch("api.system.current_app", self.app):
+                response = metrics()
+                self.assertEqual(response[1], 200)
+                self.assertEqual(response[2]["Content-Type"], CONTENT_TYPE_LATEST)
+                self.assertIn(b"ordexwallet_balance", response[0])
+
     def test_health_check_unhealthy(self):
         """Test health check when not connected."""
         from api.system import health_check

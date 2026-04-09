@@ -9,10 +9,30 @@ import time
 import psutil
 import logging
 from flask import Blueprint, request, jsonify, current_app
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 logger = logging.getLogger(__name__)
 
 system_bp = Blueprint("system", __name__)
+
+# Prometheus metrics
+rpc_calls_total = Counter(
+    "ordexwallet_rpc_calls_total", "Total RPC calls", ["daemon", "method", "status"]
+)
+
+wallet_balance = Gauge("ordexwallet_balance_oxc", "OrdexCoin balance")
+
+wallet_balance_gold = Gauge("ordexwallet_balance_gold", "OrdexGold balance")
+
+daemon_sync_percentage = Gauge(
+    "ordexwallet_daemon_sync_percentage", "Blockchain sync percentage", ["daemon"]
+)
+
+app_requests_total = Counter(
+    "ordexwallet_http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
 
 
 @system_bp.route("/health", methods=["GET"])
@@ -233,3 +253,41 @@ def rpc_console():
     except Exception as e:
         logger.error(f"Error executing RPC command: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@system_bp.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        rpc_manager = current_app.config.get("rpc_manager")
+        if rpc_manager:
+            try:
+                # Update balance metrics
+                oxc_balance = rpc_manager.ordexcoind.getbalance()
+                wallet_balance.set(oxc_balance)
+            except:
+                pass
+            try:
+                oxg_balance = rpc_manager.ordexgoldd.getbalance()
+                wallet_balance_gold.set(oxg_balance)
+            except:
+                pass
+
+            # Update sync percentage metrics
+            try:
+                sync_status = rpc_manager.get_sync_status()
+                for daemon in ["ordexcoind", "ordexgoldd"]:
+                    status = sync_status.get(daemon, {})
+                    blocks = status.get("blocks", 0)
+                    headers = status.get("headers", 0)
+                    if headers > 0:
+                        pct = (blocks / headers) * 100
+                    else:
+                        pct = 0.0
+                    daemon_sync_percentage.labels(daemon=daemon).set(pct)
+            except:
+                pass
+    except:
+        pass
+
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
