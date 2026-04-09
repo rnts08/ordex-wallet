@@ -18,7 +18,7 @@ This guide covers how to build, push, and publish OrdexWallet to the Umbriel App
 cd ordex-wallet
 
 # Build the image
-docker build -t ordexnetwork/ordex-wallet:1.0.0 .
+docker build -t rnts08/ordex-wallet:1.0.0 .
 ```
 
 ### Option B: Multi-Architecture (x86/x64 + ARM64)
@@ -35,7 +35,7 @@ docker buildx use ordexbuilder
 # Build and push multi-arch image
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  --tag ordexnetwork/ordex-wallet:1.0.0 \
+  --tag rnts08/ordex-wallet:1.0.0 \
   --push .
 ```
 
@@ -47,13 +47,13 @@ The digest ensures an immutable, verified image:
 
 ```bash
 # Pull and inspect
-docker pull ordexnetwork/ordex-wallet:1.0.0
-docker inspect ordexnetwork/ordex-wallet:1.0.0 --format='{{index .RepoDigests 0}}'
+docker pull rnts08/ordex-wallet:1.0.0
+docker inspect rnts08/ordex-wallet:1.0.0 --format='{{index .RepoDigests 0}}'
 ```
 
 Output example:
 ```
-ordexnetwork/ordex-wallet@sha256:a1b2c3d4e5f6...
+rnts08/ordex-wallet@sha256:a1b2c3d4e5f6...
 ```
 
 ---
@@ -67,7 +67,7 @@ Replace the image tag with the digest:
 image: ordex-wallet:1.0.0
 
 # After
-image: ordexnetwork/ordex-wallet:1.0.0@sha256:a1b2c3d4e5f6...
+image: rnts08/ordex-wallet:1.0.0@sha256:a1b2c3d4e5f6...
 ```
 
 ---

@@ -12,17 +12,17 @@
 For x86/x64 platforms:
 ```bash
 # Build x86/x64 image
-docker build -t ordexnetwork/ordex-wallet:1.0.0 .
+docker build -t rnts08/ordex-wallet:1.0.0 .
 
 # Push to Docker Hub
-docker push ordexnetwork/ordex-wallet:1.0.0
+docker push rnts08/ordex-wallet:1.0.0
 ```
 
 For ARM64 (when available):
 ```bash
 # Build multi-architecture image
 docker buildx build --platform linux/amd64,linux/arm64 \
-  --tag ordexnetwork/ordex-wallet:1.0.0 \
+  --tag rnts08/ordex-wallet:1.0.0 \
   --push .
 ```
 
@@ -30,13 +30,13 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ```bash
 # Get the digest for verification
-docker pull ordexnetwork/ordex-wallet:1.0.0
-docker inspect ordexnetwork/ordex-wallet:1.0.0 --format='{{index .RepoDigests 0}}'
+docker pull rnts08/ordex-wallet:1.0.0
+docker inspect rnts08/ordex-wallet:1.0.0 --format='{{index .RepoDigests 0}}'
 ```
 
 Example output:
 ```
-ordexnetwork/ordex-wallet@sha256:abc123def456...
+rnts08/ordex-wallet@sha256:abc123def456...
 ```
 
 ### 3. Update docker-compose.yml
@@ -44,7 +44,7 @@ ordexnetwork/ordex-wallet@sha256:abc123def456...
 Replace the image reference with the digest:
 ```yaml
 web:
-  image: ordexnetwork/ordex-wallet:1.0.0@sha256:abc123def456...
+  image: rnts08/ordex-wallet:1.0.0@sha256:abc123def456...
 ```
 
 ### 4. Submit Pull Request
