@@ -24,7 +24,7 @@ services:
       - webwallet_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/system/health"]
       interval: 30s
       timeout: 10s
       retries: 3

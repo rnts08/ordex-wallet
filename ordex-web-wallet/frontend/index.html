@@ -6,6 +6,7 @@
     <title>Ordex Web Wallet</title>
     <link rel="icon" type="image/png" href="ordexnetwork.png">
     <link rel="stylesheet" href="css/style.css">
+    <script src="js/lib/qrcode.min.js"></script>
 </head>
 <body>
     <div id="loading-overlay" class="loading-overlay">
@@ -14,235 +15,1008 @@
         <div class="loading-status" id="loading-status">Connecting to services...</div>
     </div>
 
+    <!-- Quick Send Modal -->
+    <div id="modal-quick-send" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Quick Send</h2>
+            <div class="form-group">
+                <label>Network</label>
+                <select id="quick-send-network" class="form-input" onchange="updateQuickSendBalance()">
+                    <option value="ordexcoin">OrdexCoin (OXC)</option>
+                    <option value="ordexgold">OrdexGold (OXG)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Balance</label>
+                <div id="quick-send-balance" class="balance-preview">Loading...</div>
+            </div>
+            <div class="form-group">
+                <label>To Address</label>
+                <input type="text" id="quick-send-address" class="form-input" placeholder="Enter recipient address" oninput="validateQuickSendForm()">
+                <div id="quick-send-address-error" class="text-error text-small hidden"></div>
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <div class="input-with-button">
+                    <input type="number" id="quick-send-amount" class="form-input" placeholder="0.00000000" step="0.00000001" oninput="calculateQuickSendFee(); validateQuickSendForm()">
+                    <button class="btn btn-secondary btn-small" onclick="useMaxQuickSend()">Use Max</button>
+                </div>
+                <div id="quick-send-amount-error" class="text-error text-small hidden"></div>
+            </div>
+            <div class="form-group">
+                <label>Fee</label>
+                <select id="quick-send-fee-type" class="form-input" onchange="calculateQuickSendFee()">
+                    <option value="auto">Automatic</option>
+                    <option value="manual">Manual</option>
+                </select>
+                <input type="number" id="quick-send-fee" class="form-input mt-1 hidden" placeholder="0.001" step="0.00000001" oninput="calculateQuickSendFee()">
+            </div>
+            <div class="form-group">
+                <div class="fee-preview">
+                    <span>Network Fee: </span>
+                    <span id="quick-send-fee-display">--</span>
+                </div>
+                <div class="fee-preview">
+                    <span>Amount Sent: </span>
+                    <span id="quick-send-total-display">--</span>
+                </div>
+            </div>
+            <div class="form-error hidden" id="quick-send-error"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeQuickSendModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmQuickSend()">Confirm Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="modal-qr" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">QR Code</h2>
+            <div class="qr-content">
+                <div id="qr-code"></div>
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <code id="qr-address" class="address-value"></code>
+            </div>
+            <div class="form-group">
+                <label>Label</label>
+                <input type="text" id="qr-label" class="form-input" placeholder="Optional label">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Confirmation Modal -->
+    <div id="modal-send-confirm" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 class="modal-title">Confirm Transaction</h2>
+            <div class="confirm-details">
+                <div class="confirm-row">
+                    <span>Network:</span>
+                    <span id="confirm-send-network">--</span>
+                </div>
+                <div class="confirm-row">
+                    <span>To:</span>
+                    <span id="confirm-send-address" class="address-preview">--</span>
+                </div>
+                <div class="confirm-row">
+                    <span>Amount:</span>
+                    <span id="confirm-send-amount">--</span>
+                </div>
+                <div class="confirm-row">
+                    <span>Fee:</span>
+                    <span id="confirm-send-fee">--</span>
+                </div>
+                <div class="confirm-row confirm-total">
+                    <span>Total:</span>
+                    <span id="confirm-send-total">--</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="save-address-checkbox">
+                    Save to address book
+                </label>
+                <input type="text" id="save-address-label" class="form-input mt-1 hidden" placeholder="Enter label for this address">
+            </div>
+            <div class="form-error hidden" id="send-confirm-error"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeSendConfirmModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="executeSend()">Send Transaction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div id="modal-user-details" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 600px;">
+            <h2 class="modal-title">User Details</h2>
+            <div class="user-details-content">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="user-detail-username" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="user-detail-email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <div id="user-detail-status">--</div>
+                </div>
+                <div class="form-group">
+                    <label>Created</label>
+                    <div id="user-detail-created">--</div>
+                </div>
+                <div class="form-group">
+                    <label>Last Login</label>
+                    <div id="user-detail-last-login">--</div>
+                </div>
+                <div class="form-group">
+                    <label>2FA Enabled</label>
+                    <div id="user-detail-2fa">--</div>
+                </div>
+                <div class="form-group">
+                    <label>Last Backup</label>
+                    <div id="user-detail-backup">--</div>
+                </div>
+                <div class="form-group">
+                    <label>Recent Transactions</label>
+                    <div id="user-detail-tx" class="tx-list-mini"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="deleteUserFromModal()">Delete User</button>
+                <button class="btn btn-secondary" onclick="closeUserModal()">Close</button>
+                <button class="btn btn-primary" onclick="saveUserDetails()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="container">
             <div class="header-content">
-                <a href="#" class="logo" onclick="showPage('home')">
+                <a href="#" class="logo" onclick="showPage('dashboard')">
                     <img src="ordexnetwork.png" alt="OrdexNetwork" class="logo-img">
                     <span class="logo-text">Ordex Web Wallet</span>
                 </a>
                 <nav id="main-nav">
-                    <a href="#home" onclick="showPage('home')">Home</a>
-                    <a href="#login" onclick="showPage('login')" id="nav-login">Login</a>
-                    <a href="#register" onclick="showPage('register')" id="nav-register">Register</a>
+                    <a href="#login" onclick="showPage('auth')" id="nav-login">Login</a>
+                    <a href="#register" onclick="showPage('auth')" id="nav-register">Register</a>
                     <a href="#dashboard" onclick="showPage('dashboard')" id="nav-dashboard" class="hidden">Dashboard</a>
-                    <a href="#send" onclick="showPage('send')" id="nav-send" class="hidden">Send</a>
-                    <a href="#receive" onclick="showPage('receive')" id="nav-receive" class="hidden">Receive</a>
-                    <a href="#history" onclick="showPage('history')" id="nav-history" class="hidden">History</a>
-                    <a href="#backup" onclick="showPage('backup')" id="nav-backup" class="hidden">Backup</a>
+                    <a href="#wallet" onclick="showPage('wallet')" id="nav-wallet" class="hidden">Wallet</a>
+                    <a href="#transactions" onclick="showPage('transactions')" id="nav-transactions" class="hidden">Transactions</a>
+                    <a href="#settings" onclick="showPage('settings')" id="nav-settings" class="hidden">Settings</a>
+                    <a href="#about" onclick="showPage('about')" id="nav-about">About</a>
                     <a href="#admin" onclick="showPage('admin')" id="nav-admin" class="hidden">Admin</a>
-                    <button onclick="logout()" id="nav-logout" class="hidden">Logout</button>
+                    <button onclick="logout()" id="nav-logout" class="btn btn-nav hidden">Logout</button>
                 </nav>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <section id="page-home" class="page">
-            <div class="features" style="margin-top: 80px;">
-                <div class="feature">
-                    <h3>Secure</h3>
-                    <p>Your wallets are encrypted with your personal passphrase</p>
-                </div>
-                <div class="feature">
-                    <h3>Multi-Chain</h3>
-                    <p>Manage both OrdexCoin and OrdexGold in one place</p>
-                </div>
-                <div class="feature">
-                    <h3>Easy Backup</h3>
-                    <p>Export encrypted backups anytime</p>
-                </div>
-            </div>
-        </section>
+    <main>
+        <div class="container">
+            <section id="page-auth" class="page">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <div class="auth-tabs">
+                            <button id="auth-tab-login" class="auth-tab active" onclick="toggleAuthMode('login')">Login</button>
+                            <button id="auth-tab-register" class="auth-tab" onclick="toggleAuthMode('register')">Register</button>
+                        </div>
+                        
+                        <div id="auth-login-form">
+                            <h2>Welcome back</h2>
+                            <form onsubmit="handleLogin(event)">
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="login-username" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <input type="password" id="login-password" class="form-input" required>
+                                </div>
+                                <div class="form-group" id="2fa-group" style="display: none;">
+                                    <label>2FA Code</label>
+                                    <input type="text" id="login-2fa" class="form-input" placeholder="Enter 2FA code">
+                                </div>
+                                <div class="form-error hidden" id="login-error"></div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                            </form>
+                        </div>
 
-        <section id="page-login" class="page hidden">
-            <div class="card" style="max-width: 400px; margin: 80px auto;">
-                <h2>Login</h2>
-                <form onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="login-username" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="login-password" class="form-input" required>
-                    </div>
-                    <div class="form-error hidden" id="login-error"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
-                </form>
-                <p class="form-footer">Don't have an account? <a href="#register" onclick="showPage('register')">Register</a></p>
-            </div>
-        </section>
+                        <div id="auth-register-form" class="hidden">
+                            <h2>Join Ordex</h2>
+                            <form onsubmit="handleRegister(event)">
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="register-username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email (optional)</label>
+                                    <input type="email" id="register-email" class="form-input">
+                                </div>
+                                <div class="grid grid-2">
+                                    <div class="form-group">
+                                        <label>Password</label>
+                                        <input type="password" id="register-password" class="form-input" required minlength="8">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Confirm</label>
+                                        <input type="password" id="register-confirm-password" class="form-input" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Wallet Passphrase</label>
+                                    <input type="password" id="register-passphrase" class="form-input" required minlength="8">
+                                    <small>Crucial for encryption. Don't lose it!</small>
+                                </div>
+                                
+                                <div class="captcha-box mb-2">
+                                    <label class="form-label">Verify you are human</label>
+                                    <div class="flex flex-center gap-2">
+                                        <div id="captcha-img" class="captcha-img">ABC 123</div>
+                                        <button type="button" class="btn btn-small" onclick="refreshCaptcha()">Refresh</button>
+                                        <input type="text" id="register-captcha" class="form-input" placeholder="Enter code" style="width: 100px;">
+                                    </div>
+                                </div>
 
-        <section id="page-register" class="page hidden">
-            <div class="card" style="max-width: 400px; margin: 80px auto;">
-                <h2>Create Account</h2>
-                <form onsubmit="handleRegister(event)">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="register-username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+">
-                        <small>3-30 characters, letters, numbers, underscore only</small>
+                                <div class="form-error hidden" id="register-error"></div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="register-email" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="register-password" class="form-input" required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}">
-                        <small>At least 8 characters with uppercase, lowercase, and number</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <input type="password" id="register-confirm-password" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Wallet Passphrase</label>
-                        <input type="password" id="register-passphrase" class="form-input" required minlength="8">
-                        <small>Used to encrypt your wallets. <strong>DON'T FORGET THIS!</strong></small>
-                    </div>
-                    <div class="form-error hidden" id="register-error"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
-                </form>
-                <p class="form-footer">Already have an account? <a href="#login" onclick="showPage('login')">Login</a></p>
-            </div>
-        </section>
-
-        <section id="page-dashboard" class="page hidden">
-            <h2 style="margin-top: 80px;">My Wallet</h2>
-            <div class="balance-cards">
-                <div class="balance-card">
-                    <div class="balance-header">
-                        <img src="OXCLOGO.png" alt="OXC" class="balance-logo">
-                        <span>OrdexCoin</span>
-                    </div>
-                    <div class="balance-value" id="oxc-balance">--</div>
                 </div>
-                <div class="balance-card">
-                    <div class="balance-header">
-                        <img src="OXGLOGO.png" alt="OXG" class="balance-logo">
-                        <span>OrdexGold</span>
-                    </div>
-                    <div class="balance-value" id="oxg-balance">--</div>
-                </div>
-            </div>
-            <div class="quick-actions">
-                <a href="#send" class="btn btn-primary" onclick="showPage('send')">Send</a>
-                <a href="#receive" class="btn btn-secondary" onclick="showPage('receive')">Receive</a>
-                <a href="#history" class="btn btn-secondary" onclick="showPage('history')">History</a>
-                <a href="#backup" class="btn btn-secondary" onclick="showPage('backup')">Backup</a>
-            </div>
-        </section>
+            </section>
 
-        <section id="page-send" class="page hidden">
-            <div class="card" style="max-width: 500px; margin: 80px auto;">
-                <h2>Send</h2>
-                <form onsubmit="handleSend(event)">
-                    <div class="form-group">
-                        <label>Chain</label>
-                        <select id="send-chain" class="form-input">
+            <section id="page-dashboard" class="page hidden">
+                <h1 class="page-title">Dashboard</h1>
+                
+                <div class="grid grid-2 mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title"><img src="OXCLOGO.png" alt="OXC" class="chain-logo"> OrdexCoin (OXC)</span>
+                            <span id="oxc-status" class="status status-syncing">
+                                <span class="status-dot"></span>
+                                Syncing
+                            </span>
+                        </div>
+                        <div class="balance" id="oxc-balance">0.00 <span class="balance-symbol">OXC</span></div>
+                        <div class="balance-fiat mt-1" id="oxc-fiat">$0.00 USD</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title"><img src="OXGLOGO.png" alt="OXG" class="chain-logo"> OrdexGold (OXG)</span>
+                            <span id="oxg-status" class="status status-syncing">
+                                <span class="status-dot"></span>
+                                Syncing
+                            </span>
+                        </div>
+                        <div class="balance" id="oxg-balance">0.00 <span class="balance-symbol">OXG</span></div>
+                        <div class="balance-fiat mt-1" id="oxg-fiat">$0.00 USD</div>
+                    </div>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Total Balance</span>
+                    </div>
+                    <div class="balance" id="total-balance">0.00 <span class="balance-symbol">OXC + OXG</span></div>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Quick Actions</span>
+                    </div>
+                    <div class="quick-links">
+                        <a href="#wallet" class="btn" onclick="showPage('wallet'); showWalletTab('send')">Send</a>
+                        <a href="#wallet" class="btn" onclick="showPage('wallet'); showWalletTab('receive')">Receive</a>
+                        <a href="#transactions" class="btn" onclick="showPage('transactions')">Transactions</a>
+                        <a href="#settings" class="btn" onclick="showPage('settings')">Settings</a>
+                        <button class="btn btn-primary" onclick="openQuickSendModal()">Quick Send</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Recent Transactions</span>
+                        <a href="#transactions" onclick="showPage('transactions')" class="btn btn-small btn-secondary">View All</a>
+                    </div>
+                    <div id="recent-tx" class="tx-list">
+                        <div class="text-center text-muted" style="padding: 20px;">No transactions yet</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-wallet" class="page hidden">
+                <h1 class="page-title">Wallet</h1>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showWalletTab('overview')">Overview</button>
+                    <button class="tab" onclick="showWalletTab('receive')">Receive</button>
+                    <button class="tab" onclick="showWalletTab('send')">Send</button>
+                    <button class="tab" onclick="showWalletTab('addresses')">Addresses</button>
+                    <button class="tab" onclick="showWalletTab('import-export')">Import/Export</button>
+                </div>
+                
+                <div id="wallet-overview" class="wallet-tab">
+                    <div class="grid grid-2 mb-2">
+                        <div class="card">
+                            <div class="card-title mb-1">OrdexCoin Balance</div>
+                            <div class="balance" id="wallet-oxc-balance">0.00 <span class="balance-symbol">OXC</span></div>
+                            <div class="text-muted text-small" id="wallet-oxc-address">Loading...</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title mb-1">OrdexGold Balance</div>
+                            <div class="balance" id="wallet-oxg-balance">0.00 <span class="balance-symbol">OXG</span></div>
+                            <div class="text-muted text-small" id="wallet-oxg-address">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="wallet-receive" class="wallet-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">OrdexCoin (OXC)</span>
+                            <button class="btn btn-primary" onclick="generateNewAddress('ordexcoin')">Create Address</button>
+                        </div>
+                        <div id="oxc-address" class="address-display">
+                            <span class="address-text">No address - click Create Address</span>
+                            <button class="copy-btn copy-btn-hidden" onclick="copyAddress(this)">Copy</button>
+                            <button class="copy-btn copy-btn-hidden" onclick="showQR('ordexcoin')">QR</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">OrdexGold (OXG)</span>
+                            <button class="btn btn-primary" onclick="generateNewAddress('ordexgold')">Create Address</button>
+                        </div>
+                        <div id="oxg-address" class="address-display">
+                            <span class="address-text">No address - click Create Address</span>
+                            <button class="copy-btn copy-btn-hidden" onclick="copyAddress(this)">Copy</button>
+                            <button class="copy-btn copy-btn-hidden" onclick="showQR('ordexgold')">QR</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="wallet-send" class="wallet-tab hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Send Transaction</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Network</label>
+                            <select id="send-network" class="form-input" onchange="updateSendBalance()">
+                                <option value="ordexcoin">OrdexCoin (OXC) - Balance: <span id="send-oxc-bal">--</span></option>
+                                <option value="ordexgold">OrdexGold (OXG) - Balance: <span id="send-oxg-bal">--</span></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Recipient Address</label>
+                            <input type="text" id="send-address" class="form-input" placeholder="Enter recipient address" oninput="validateSendForm()">
+                            <div id="send-address-error" class="text-error text-small hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Amount</label>
+                            <div class="input-with-button">
+                                <input type="number" id="send-amount" class="form-input" placeholder="0.00000000" step="0.00000001" oninput="calculateFee(); validateSendForm()">
+                                <button class="btn btn-secondary btn-small" onclick="useMax()">Use Max</button>
+                            </div>
+                            <div id="send-amount-error" class="text-error text-small hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fee</label>
+                            <select id="send-fee-type" class="form-input" onchange="calculateFee()">
+                                <option value="auto">Automatic</option>
+                                <option value="manual">Manual</option>
+                            </select>
+                            <input type="number" id="send-fee" class="form-input mt-1 hidden" placeholder="0.001" step="0.00000001" oninput="calculateFee()">
+                        </div>
+                        <div class="form-group">
+                            <div class="fee-preview">
+                                <span>Network Fee: </span>
+                                <span id="send-fee-display">--</span>
+                            </div>
+                            <div class="fee-preview">
+                                <span>Amount Sent: </span>
+                                <span id="send-total-display">--</span>
+                            </div>
+                        </div>
+                        <div class="form-error hidden" id="send-error"></div>
+                        <button class="btn btn-primary" onclick="openSendConfirm()">Send</button>
+                    </div>
+                </div>
+                
+                <div id="wallet-import-export" class="wallet-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Import Private Key</span>
+                        </div>
+                        <p class="text-muted mb-2">Import a private key in WIF format to add funds to your wallet.</p>
+                        <div class="form-group">
+                            <label class="form-label">Network</label>
+                            <select id="import-network" class="form-input">
+                                <option value="ordexcoin">OrdexCoin (OXC)</option>
+                                <option value="ordexgold">OrdexGold (OXG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Private Key (WIF)</label>
+                            <input type="password" id="import-wif" class="form-input" placeholder="Enter WIF private key">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Passphrase (optional)</label>
+                            <input type="password" id="import-passphrase" class="form-input" placeholder="Enter passphrase if key is encrypted">
+                        </div>
+                        <div class="form-error hidden" id="import-error"></div>
+                        <button class="btn btn-primary" onclick="importWif()">Import Key</button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Export Private Key</span>
+                        </div>
+                        <p class="text-muted mb-2">Export your private key. <strong>Warning:</strong> Anyone with this key can access your funds.</p>
+                        <div class="form-group">
+                            <label class="form-label">Network</label>
+                            <select id="export-network" class="form-input" onchange="loadExportAddress()">
+                                <option value="ordexcoin">OrdexCoin (OXC)</option>
+                                <option value="ordexgold">OrdexGold (OXG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Address</label>
+                            <code id="export-address" class="address-value">Loading...</code>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Private Key</label>
+                            <div class="export-key-display">
+                                <code id="export-wif">********</code>
+                                <button class="btn btn-small" onclick="revealExportWif()">Reveal</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm</label>
+                            <div class="confirm-checkbox">
+                                <input type="checkbox" id="export-confirm">
+                                <span>I understand that anyone with this key can access my funds</span>
+                            </div>
+                        </div>
+                        <div class="form-error hidden" id="export-error"></div>
+                        <button class="btn btn-primary" onclick="exportWif()">Export Key</button>
+                    </div>
+                </div>
+                
+                <div id="wallet-addresses" class="wallet-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Address Book</span>
+                        </div>
+                        <div id="address-book-list" class="address-list">
+                            <div class="text-muted text-center" style="padding: 20px;">No saved addresses</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Archived Addresses</span>
+                        </div>
+                        <div id="archived-addresses" class="address-list">
+                            <div class="text-muted text-center" style="padding: 20px;">No archived addresses</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-transactions" class="page hidden">
+                <h1 class="page-title">Transactions</h1>
+                
+                <div class="card mb-2">
+                    <div class="flex gap-1">
+                        <select id="tx-filter-network" class="form-input" style="width: auto;" onchange="loadTransactions()">
+                            <option value="">All Networks</option>
                             <option value="ordexcoin">OrdexCoin</option>
                             <option value="ordexgold">OrdexGold</option>
                         </select>
+                        <select id="tx-filter-category" class="form-input" style="width: auto;" onchange="loadTransactions()">
+                            <option value="">All Types</option>
+                            <option value="receive">Received</option>
+                            <option value="send">Sent</option>
+                        </select>
+                        <input type="text" id="tx-search" class="form-input" placeholder="Search by address or txid..." oninput="debounceTxSearch()">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div id="tx-list" class="tx-list">
+                        <div class="text-center text-muted" style="padding: 20px;">Loading...</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-settings" class="page hidden">
+                <h1 class="page-title">Settings</h1>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Change Password</span>
                     </div>
                     <div class="form-group">
-                        <label>To Address</label>
-                        <input type="text" id="send-address" class="form-input" required>
+                        <label>Current Password</label>
+                        <input type="password" id="current-password" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label>Amount</label>
-                        <input type="number" id="send-amount" class="form-input" step="0.00000001" required>
+                        <label>New Password</label>
+                        <input type="password" id="new-password" class="form-input">
                     </div>
-                    <div class="form-error hidden" id="send-error"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send</button>
-                </form>
-            </div>
-        </section>
-
-        <section id="page-receive" class="page hidden">
-            <div class="card" style="max-width: 500px; margin: 80px auto;">
-                <h2>Receive</h2>
-                <div class="address-list">
-                    <div class="address-item">
-                        <span class="address-label">OrdexCoin</span>
-                        <code class="address-value" id="oxc-address" style="word-break: break-all;">Loading...</code>
-                        <button class="btn-copy" onclick="copyAddress('oxc-address')">Copy</button>
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" class="form-input">
                     </div>
-                    <div class="address-item">
-                        <span class="address-label">OrdexGold</span>
-                        <code class="address-value" id="oxg-address" style="word-break: break-all;">Loading...</code>
-                        <button class="btn-copy" onclick="copyAddress('oxg-address')">Copy</button>
+                    <div class="form-error hidden" id="password-error"></div>
+                    <div class="form-success hidden" id="password-success"></div>
+                    <button class="btn btn-primary" onclick="handleChangePassword()">Change Password</button>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Two-Factor Authentication</span>
+                    </div>
+                    <div id="2fa-status">
+                        <p class="text-muted">2FA is not enabled</p>
+                        <button class="btn btn-primary" onclick="showSetup2FA()">Enable 2FA</button>
+                    </div>
+                    <div id="2fa-setup" class="hidden">
+                        <p>Scan this QR code with your authenticator app:</p>
+                        <div id="2fa-qrcode" class="text-center"></div>
+                        <div class="form-group mt-2">
+                            <label>Enter code to verify</label>
+                            <input type="text" id="2fa-code" class="form-input">
+                        </div>
+                        <button class="btn btn-primary" onclick="verifyAndEnable2FA()">Enable</button>
+                        <button class="btn btn-secondary" onclick="cancel2FA()">Cancel</button>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section id="page-history" class="page hidden">
-            <h2 style="margin-top: 80px;">Transaction History</h2>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Chain</th>
-                            <th>Amount</th>
-                            <th>TxID</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="page-backup" class="page hidden">
-            <div class="card" style="max-width: 500px; margin: 80px auto;">
-                <h2>Backup</h2>
-                <p>Download encrypted backup of your wallets</p>
-                <button class="btn btn-primary" onclick="createBackup()">Download Backup</button>
-            </div>
-        </section>
-
-        <section id="page-admin" class="page hidden">
-            <h2 style="margin-top: 80px;">Admin Dashboard</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-users">--</div>
-                    <div class="stat-label">Total Users</div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Backup</span>
+                    </div>
+                    <p class="text-muted mb-2">Download encrypted backup of your wallets</p>
+                    <button class="btn btn-primary" onclick="createBackup()">Download Backup</button>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-active">--</div>
-                    <div class="stat-label">Active Users</div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Preferences</span>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Theme</label>
+                            <select id="setting-theme" class="form-input" onchange="changeTheme()">
+                                <option value="dark">Dark (Premium)</option>
+                                <option value="light">Light</option>
+                                <option value="system">System Default</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Display Currency</label>
+                            <select id="setting-currency" class="form-input">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="BTC">BTC (₿)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-wallets">--</div>
-                    <div class="stat-label">Total Wallets</div>
+
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Danger Zone</span>
+                    </div>
+                    <p class="text-muted mb-2">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                    <button class="btn btn-danger" onclick="openDeleteAccountModal()">Delete Account</button>
                 </div>
-            </div>
-            <h3>Users</h3>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Created</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-users-table"></tbody>
-                </table>
-            </div>
-        </section>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Notifications</span>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="setting-reminders" onchange="saveSettings()">
+                            Opt out of backup/encryption reminders
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="setting-notifications" onchange="saveSettings()">
+                            Opt out of system notifications
+                        </label>
+                    </div>
+                    <div class="form-success hidden" id="notification-success"></div>
+                </div>
+            </section>
+
+            <section id="page-about" class="page hidden">
+                <h1 class="page-title">About Ordex Web Wallet</h1>
+                
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Project Overview</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">The <strong>Ordex Web Wallet</strong> is the official, self-hosted custodial solution for the Ordex Network. Designed for maximum security and ease of use, it allows you to manage your <strong>OrdexCoin (OXC)</strong> and <strong>OrdexGold (OXG)</strong> assets in a completely private environment.</p>
+                        <p>This application provides a unified interface for chain interactions, transaction management, and administrative oversight, ensuring that community members can maintain full control over their financial sovereignty within the Ordex ecosystem.</p>
+                    </div>
+                </div>
+
+                <div class="card mb-2">
+                    <div class="card-header">
+                        <span class="card-title">Support the Project</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">Ordex is a community-driven open-source project. Your support helps us fund core development, maintain network infrastructure, and refine the protocol through rigorous testing.</p>
+                        
+                        <div class="donation-grid">
+                            <div class="donation-item">
+                                <span class="donation-label">Bitcoin (BTC)</span>
+                                <code class="donation-address">bc1qkmzc6d49fl0edyeynezwlrfqv486nmk6p5pmta</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">Ethereum (ETH/ERC-20)</span>
+                                <code class="donation-address">0xC13D012CdAae7978CAa0Ef5B1E30ac6e65e6b17F</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">Litecoin (LTC)</span>
+                                <code class="donation-address">ltc1q0ahxru7nwgey64agffr7x89swekj7sz8stqc6x</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">Solana (SOL)</span>
+                                <code class="donation-address">HB2o6q6vsW5796U5y7NxNqA7vYZW1vuQjpAHDo7FAMG8</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">Ripple (XRP)</span>
+                                <code class="donation-address">rUW7Q64vR4PwDM3F27etd6ipxK8MtuxsFs</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">OrdexCoin (OXC)</span>
+                                <code class="donation-address">oxc1q3psft0hvlslddyp8ktr3s737req7q8hrl0rkly</code>
+                            </div>
+                            <div class="donation-item">
+                                <span class="donation-label">OrdexGold (OXG)</span>
+                                <code class="donation-address">oxg1q34apjkn2yc6rsvuua98432ctqdrjh9hdkhpx0t</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">License & Terms</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="license-display">
+                            <h3>Source-Available Non-Commercial License</h3>
+                            <p class="text-small text-muted mb-2">Copyright (c) 2026 ORDEX PROTOCOL / Timh Bergstrom</p>
+                            <pre class="license-text">Permission is hereby granted to any person obtaining a copy of this software and associated documentation files (the "Software") to use, copy, modify, and distribute the Software for non-commercial purposes only, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+2. The Software may not be used, in whole or in part, for any commercial purpose without prior written permission from the copyright holder.
+
+3. If you modify, use, or build upon the Software, you must provide clear attribution to the original work, stating that your work is based on this Software. You are not required to license your derivative work under the same terms; however, any commercial use of the Software, including modified versions or works incorporating it in whole or in part, requires a separate commercial license from the copyright holder.
+
+Commercial Use Restriction:
+All rights to use the Software for commercial purposes are reserved exclusively by ORDEX PROTOCOL. You may not use, incorporate, or adapt the Software, in whole or in part, to develop, market, or distribute commercial products or services without prior written agreement from the copyright holder.</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-admin" class="page hidden">
+                <h1 class="page-title">Admin Dashboard</h1>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showAdminTab('status')">Status</button>
+                    <button class="tab" onclick="showAdminTab('users')">Users</button>
+                    <button class="tab" onclick="showAdminTab('notifications')">Notifications</button>
+                    <button class="tab" onclick="showAdminTab('maintenance')">Maintenance</button>
+                    <button class="tab" onclick="showAdminTab('audit')">Audit Log</button>
+                    <button class="tab" onclick="showAdminTab('fees')">Fees</button>
+                    <button class="tab" onclick="showAdminTab('stake')">Stake/APR</button>
+                </div>
+                
+                <div id="admin-status" class="admin-tab">
+                    <div class="grid grid-4 mb-2">
+                        <div class="card stat-card">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value" id="stat-users">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Active Users</div>
+                            <div class="stat-value" id="stat-active">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Active Sessions</div>
+                            <div class="stat-value" id="stat-sessions">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Total Wallets</div>
+                            <div class="stat-value" id="stat-wallets">--</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-4 mb-2">
+                        <div class="card stat-card">
+                            <div class="stat-label">Total OXC</div>
+                            <div class="stat-value stat-accent" id="stat-oxc">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Total OXG</div>
+                            <div class="stat-value stat-accent" id="stat-oxg">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Total Transactions</div>
+                            <div class="stat-value" id="stat-tx">--</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-label">Database Size</div>
+                            <div class="stat-value" id="stat-db-size">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="admin-users" class="admin-tab hidden">
+                    <div class="card">
+                        <div class="admin-toolbar">
+                            <div class="search-box">
+                                <input type="text" id="user-search" class="form-input" placeholder="Search users..." oninput="debounceSearch()">
+                            </div>
+                            <div class="sort-box">
+                                <select id="user-sort" class="form-input" onchange="loadAdmin()">
+                                    <option value="created_at:DESC">Newest First</option>
+                                    <option value="created_at:ASC">Oldest First</option>
+                                    <option value="username:ASC">Username A-Z</option>
+                                    <option value="username:DESC">Username Z-A</option>
+                                    <option value="last_login:DESC">Recent Login</option>
+                                    <option value="is_active:DESC">Active First</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Wallets</th>
+                                        <th>Created</th>
+                                        <th>Last Login</th>
+                                        <th>Status</th>
+                                        <th>2FA</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-table"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-small" id="prev-page" onclick="changePage(-1)">Previous</button>
+                            <span id="page-info">Page 1</span>
+                            <button class="btn btn-small" id="next-page" onclick="changePage(1)">Next</button>
+                        </div>
+                    </div>
+                
+                <div id="admin-notifications" class="admin-tab hidden">
+                    <div class="grid grid-2 mb-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Broadcast Message</span>
+                            </div>
+                            <p class="text-muted mb-2">Send a notification to ALL active users.</p>
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="broadcast-title" class="form-input" placeholder="e.g. System Maintenance">
+                            </div>
+                            <div class="form-group">
+                                <label>Message</label>
+                                <textarea id="broadcast-message" class="form-input" rows="4" placeholder="Enter message text..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="broadcast-type" class="form-input">
+                                    <option value="announcement">Announcement</option>
+                                    <option value="alert">Security Alert</option>
+                                    <option value="reminder">Reminder</option>
+                                </select>
+                            </div>
+                            <div class="form-error hidden" id="broadcast-error"></div>
+                            <button class="btn btn-primary" onclick="sendBroadcast()">Send Broadcast</button>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">User Notifications</span>
+                            </div>
+                            <p class="text-muted mb-2">Send a direct message to a specific user.</p>
+                            <div class="form-group">
+                                <label>Username or ID</label>
+                                <input type="text" id="direct-msg-target" class="form-input" placeholder="User ID or search...">
+                            </div>
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="direct-msg-title" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Message</label>
+                                <textarea id="direct-msg-message" class="form-input" rows="3"></textarea>
+                            </div>
+                            <div class="form-error hidden" id="direct-msg-error"></div>
+                            <button class="btn btn-primary" onclick="sendDirectMessage()">Send Message</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-maintenance" class="admin-tab hidden">
+                    <div class="grid grid-2 mb-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">System Actions</span>
+                            </div>
+                            <div class="action-list">
+                                <button class="btn btn-secondary mb-1" style="width: 100%;" onclick="clearExpiredSessions()">Clear Expired Sessions</button>
+                                <button class="btn btn-secondary mb-1" style="width: 100%;" onclick="rotateAuditLogs()">Rotate Audit Logs</button>
+                                <button class="btn btn-secondary mb-1" style="width: 100%;" onclick="backupDatabase()">Backup Database</button>
+                                <button class="btn btn-danger" style="width: 100%;" onclick="toggleMaintenanceMode()">Toggle Maintenance Mode</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Blockchain Sync Status</span>
+                            </div>
+                            <div id="admin-sync-status">
+                                <div class="sync-item">
+                                    <span>OrdexCoin (OXC):</span>
+                                    <span id="admin-oxc-sync">Checking...</span>
+                                </div>
+                                <div class="sync-item">
+                                    <span>OrdexGold (OXG):</span>
+                                    <span id="admin-oxg-sync">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                
+                <div id="admin-audit" class="admin-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Recent Actions</span>
+                            <button class="btn btn-small btn-secondary" onclick="loadAuditLog()">Refresh</button>
+                        </div>
+                        <div id="audit-log" class="audit-list">
+                            <div class="text-muted text-center" style="padding: 20px;">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="admin-fees" class="admin-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Fee Configuration</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Chain</label>
+                            <select id="fee-chain" class="form-input" onchange="loadFeeConfig()">
+                                <option value="ordexcoin">OrdexCoin (OXC)</option>
+                                <option value="ordexgold">OrdexGold (OXG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Send Fee (per KB)</label>
+                            <input type="number" id="fee-send" class="form-input" step="0.00000001" placeholder="0.001">
+                        </div>
+                        <div class="form-group">
+                            <label>Receive Fee (%)</label>
+                            <input type="number" id="fee-receive" class="form-input" step="0.01" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="fee-auto"> Use Auto Fee (recommended)
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Admin Spillover Address</label>
+                            <input type="text" id="fee-admin-address" class="form-input" placeholder="Address for fee surplus">
+                        </div>
+                        <div class="form-error hidden" id="fee-error"></div>
+                        <button class="btn btn-primary" onclick="saveFeeConfig()">Save Fee Config</button>
+                    </div>
+                </div>
+                
+                <div id="admin-stake" class="admin-tab hidden">
+                    <div class="card mb-2">
+                        <div class="card-header">
+                            <span class="card-title">Stake Configuration</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Chain</label>
+                            <select id="stake-chain" class="form-input" onchange="loadStakeConfig()">
+                                <option value="ordexcoin">OrdexCoin (OXC)</option>
+                                <option value="ordexgold">OrdexGold (OXG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>APR (%):</label>
+                            <input type="number" id="stake-apr" class="form-input" step="0.1" placeholder="5.0">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="stake-global-enabled"> Enable Staking Globally
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Default Auto-Stake (%):</label>
+                            <select id="stake-auto-default" class="form-input">
+                                <option value="0">Disabled</option>
+                                <option value="25">25%</option>
+                                <option value="50">50%</option>
+                                <option value="75">75%</option>
+                                <option value="100">100%</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Allowed Intervals</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" id="stake-1d" checked> 1 Day</label>
+                                <label><input type="checkbox" id="stake-7d" checked> 7 Days</label>
+                                <label><input type="checkbox" id="stake-30d" checked> 30 Days</label>
+                            </div>
+                        </div>
+                        <div class="form-error hidden" id="stake-error"></div>
+                        <button class="btn btn-primary" onclick="saveStakeConfig()">Save Stake Config</button>
+                    </div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer>
         <div class="container">
+            <div class="footer-links">
+                <a href="https://ordexnetwork.org" target="_blank">OrdexNetwork</a>
+                <a href="https://ordexswap.online" target="_blank">Swap</a>
+                <a href="https://discord.gg/65y82n436J" target="_blank">Discord</a>
+            </div>
             <p>Ordex Web Wallet &copy; 2026 ORDEX PROTOCOL. All rights reserved.</p>
         </div>
     </footer>
+
+    <div id="modal-delete-account" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 class="modal-title">Delete Account</h3>
+            <p class="mb-2 text-muted">Are you sure you want to delete your account? This will permanently delete your wallets, private keys, and transaction history.</p>
+            <div class="form-group">
+                <label class="form-label">Enter Password to Confirm</label>
+                <input type="password" id="delete-confirm-password" class="form-input">
+            </div>
+            <div class="form-error hidden" id="delete-account-error"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDeleteAccountModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="executeDeleteAccount()">Permanently Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/app.js"></script>
 </body>

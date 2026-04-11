@@ -228,7 +228,7 @@ class TestSystemAPI:
 
     def test_root_endpoint(self, client):
         """Test root endpoint."""
-        response = client.get("/")
+        response = client.get("/api/info")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -258,7 +258,7 @@ class TestAuthMiddleware:
 
         app = Flask(__name__)
 
-        with app.test_request_context(cookies={"session_token": "cookie_token"}):
+        with app.test_request_context(environ_base={"HTTP_COOKIE": "session_token=cookie_token"}):
             token = extract_token()
             assert token == "cookie_token"
 

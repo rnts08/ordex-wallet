@@ -7,29 +7,29 @@ Multi-user hosted web wallet built from OrdexWallet self-hosted code. Provides u
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    ordex-web-wallet/                              │
-│                                                             │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐   │
-│  │   webwallet   │ │  postgres    │ │    ordexcoind        │   │
-│  │  (Flask)     │ │  (Database)  │ │    (OXC daemon)     │   │
-│  │   :5000      │ │   :5432      │ │    :5332            │   │
-│  └──────────────┘ └──────────────┘ └──────────────────────┘   │
-│         │                 │                 │                     │
-│         └─────────────────┴─────────────────┼─────────────────┘   │
-│                          ordexgoldd (:5333)                     │
-└─────────────────────────────────────────────────────────────────┘
-         │                 │                 │
-    ┌────┴────────────────┴────────────────┴────┐
-    │         Shared Volume: ordexweb_data       │
-    │  ┌──────────────────────────────────────┐ │
-    │  │ /data/blocks/     - Blockchain data  │ │
-    │  │ /data/chainstate/ - Chain state       │ │
-    │  │ /data/wallets/    - wallet_*.dat      │ │
-    │  │ /data/backups/    - User backups      │ │
-    │  │ /data/logs/       - App logs          │ │
-    │  └──────────────────────────────────────┘ │
-    └──────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│                    ordex-web-wallet/                                                  │
+│                                                                                       │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ ┌──────────────────────┐  │
+│  │   webwallet  │ │  postgres    │ │    ordexcoind        │ │    ordexgoldd        │  │
+│  │  (Flask)     │ │  (Database)  │ │    (OXC daemon)      │ │    (OXG daemon)      │  │
+│  │   :5000      │ │   :5432      │ │    :5332             │ │    :5333             │  │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ └──────────────────────┘  │
+│         │                 │                 │                     │                   |
+│         └─────────────────┴─────────────────┼─────────────────────┘                   |
+│                                             │                                         |
+└───────────────────────────────────────────────────────────────────────────────────────┘
+             │                │                │
+        ┌────┴────────────────┴────────────────┴────┐
+        │         Shared Volume: ordexweb_data      │
+        │  ┌──────────────────────────────────────┐ │  
+        │  │ /data/blocks/     - Blockchain data  │ │
+        │  │ /data/chainstate/ - Chain state      │ │
+        │  │ /data/wallets/    - wallet_*.dat     │ │   
+        │  │ /data/backups/    - User backups     │ │
+        │  │ /data/logs/       - App logs         │ │
+        │  └──────────────────────────────────────┘ │
+        └───────────────────────────────────────────┘
 ```
 
 ## Container Services
@@ -45,15 +45,15 @@ Multi-user hosted web wallet built from OrdexWallet self-hosted code. Provides u
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  webwallet_network (172.16.1.0/24)                         │
-│  - webwallet ↔ postgres                                  │
-│  - webwallet ↔ ordexcoind                                │
-│  - webwallet ↔ ordexgoldd                                │
-└──────────────────────────────────────────────────────────���──┘
+│  webwallet_network (172.16.1.0/24)                          │
+│  - webwallet ↔ postgres                                     │
+│  - webwallet ↔ ordexcoind                                   │
+│  - webwallet ↔ ordexgoldd                                   │
+└─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
-│  daemon_network (172.16.2.0/24)                            │
-│  - ordexcoind internal                                     │
-│  - ordexgoldd internal                                    │
+│  daemon_network (172.16.2.0/24)                             │
+│  - ordexcoind internal                                      │
+│  - ordexgoldd internal                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,12 +78,12 @@ UserBrowser ──HTTP──> webwallet:5000 ──CLI──> ordexcoind:5332
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
     password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,
     is_admin BOOLEAN DEFAULT FALSE,
-    is_admin BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 -- User wallets (mapping to daemon wallets)
@@ -121,6 +121,7 @@ CREATE TABLE address_book (
     label TEXT,
     address TEXT NOT NULL,
     chain TEXT NOT NULL,
+    archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -205,8 +206,33 @@ POST /api/admin/fees       - Set fees
 
 ### System Endpoints
 ```
-GET /api/system/health     - Health check
-GET /api/system/metrics   - Prometheus metrics
+GET /api/system/health    
+
+### Admin Functions
+The administrative panel allows system administrators to manage users, monitor system health, and configure global settings.
+
+- **User Management**:
+    - List/Search users with pagination and sorting.
+    - View deep user details (wallets, recent transactions, last login).
+    - Enable/Disable accounts (prevents session creation).
+    - Hard delete users (destructive).
+    - Reset user passwords (requires admin override).
+    - Wallet Sweep: Transfer all funds from a user's wallet to a specified admin address.
+- **Global Settings**:
+    - Fee Configuration: Set send/receive fees per chain.
+    - Stake Configuration: Set APR and lock intervals for staking rewards.
+- **Communication**:
+    - Individual user messages (Reminders/Alerts).
+    - Global broadcast announcements.
+- **Monitoring**:
+    - System Statistics: Total users, active sessions, blockchain balances, storage usage.
+    - Audit Logs: Full history of all administrative actions.
+
+### Audit Logging & Security
+All administrative actions MUST be recorded in the `admin_audit` table.
+- **Required Fields**: `admin_user_id`, `action`, `target_user_id` (if applicable), `details` (JSON), `created_at`.
+- **Sensitive Actions**: Resetting passwords, sweeping wallets, and broadcasting messages require high-visibility logging in both the database and server-side log files.
+- **Confirmation**: Destructive actions (Delete, Sweep, Disable) require double-confirmation in the frontend.
 ```
 
 ## Security Design

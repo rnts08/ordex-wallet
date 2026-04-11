@@ -1,11 +1,13 @@
 from flask import Blueprint, jsonify
+import logging
 
+logger = logging.getLogger("ordex_web_wallet.health")
 system_bp = Blueprint("system", __name__)
 
 
 @system_bp.route("/health", methods=["GET"])
 def health():
-    state = {"status": "healthy", "services": {}}
+    state = {"status": "healthy", "services": {}, "version": "1.0.1"}
 
     try:
         from ordex_web_wallet.database import DATABASE
@@ -15,30 +17,46 @@ def health():
     except Exception as e:
         state["services"]["database"] = {"status": "unhealthy", "error": str(e)}
         state["status"] = "degraded"
+        logger.error(f"Health check: database {e}")
 
     try:
-        from ordex_web_wallet.rpc import daemon_manager
+        from ordex_web_wallet.rpc import daemon_manager, sanitize_rpc_error
 
-        ctx = daemon_manager.get_context("ordexcoin")
-        info = ctx.call("getblockchaininfo")
+        info = daemon_manager.get_blockchain_info("ordexcoin")
         state["services"]["ordexcoind"] = {
             "status": "healthy",
-            "blocks": info.get("blocks", 0) if info else 0,
+            "blocks": int(info.get("blocks", 0)) if info else 0,
+            "chain": info.get("chain") if info else None,
         }
     except Exception as e:
-        state["services"]["ordexcoind"] = {"status": "unhealthy", "error": str(e)[:50]}
+        state["services"]["ordexcoind"] = {
+            "status": "unhealthy",
+            "error": sanitize_rpc_error(e)[:50],
+        }
+        logger.error(f"Health check: ordexcoind {e}")
 
     try:
-        from ordex_web_wallet.rpc import daemon_manager
+        from ordex_web_wallet.rpc import daemon_manager, sanitize_rpc_error
 
-        ctx = daemon_manager.get_context("ordexgold")
-        info = ctx.call("getblockchaininfo")
+        info = daemon_manager.get_blockchain_info("ordexgold")
         state["services"]["ordexgoldd"] = {
             "status": "healthy",
-            "blocks": info.get("blocks", 0) if info else 0,
+            "blocks": int(info.get("blocks", 0)) if info else 0,
+            "chain": info.get("chain") if info else None,
         }
     except Exception as e:
-        state["services"]["ordexgoldd"] = {"status": "unhealthy", "error": str(e)[:50]}
+        state["services"]["ordexgoldd"] = {
+            "status": "unhealthy",
+            "error": sanitize_rpc_error(e)[:50],
+        }
+        logger.error(f"Health check: ordexgoldd {e}")
+
+    try:
+        from ordex_web_wallet.database import get_user_count
+
+        state["services"]["users"] = {"status": "healthy", "count": get_user_count()}
+    except Exception as e:
+        state["services"]["users"] = {"status": "unhealthy", "error": str(e)}
 
     return jsonify(state)
 

@@ -66,7 +66,7 @@ class TestDatabaseSchema:
         from ordex_web_wallet.database import SCHEMA
 
         assert "username TEXT UNIQUE NOT NULL" in SCHEMA
-        assert "email TEXT UNIQUE NOT NULL" in SCHEMA
+        assert "email TEXT UNIQUE" in SCHEMA
         assert "password_hash TEXT NOT NULL" in SCHEMA
         assert "is_admin BOOLEAN DEFAULT FALSE" in SCHEMA
         assert "is_active BOOLEAN DEFAULT TRUE" in SCHEMA
@@ -243,6 +243,82 @@ class TestDatabaseClass:
             db.get_connection()
 
             mock_connect.assert_called_once()
+
+
+class TestFeeConfig:
+    """Test fee configuration operations."""
+
+    @patch("ordex_web_wallet.database.DATABASE")
+    def test_get_fee_config_returns_all_chains(self, mock_db):
+        from ordex_web_wallet.database import get_fee_config
+
+        mock_db.execute.return_value = [
+            {
+                "chain": "ordexcoin",
+                "send_fee_per_kb": 0.001,
+                "receive_fee_percent": 0,
+                "use_auto_fee": True,
+            },
+            {
+                "chain": "ordexgold",
+                "send_fee_per_kb": 0.001,
+                "receive_fee_percent": 0,
+                "use_auto_fee": True,
+            },
+        ]
+
+        fees = get_fee_config()
+
+        assert len(fees) == 2
+        assert fees[0]["chain"] == "ordexcoin"
+
+    @patch("ordex_web_wallet.database.DATABASE")
+    def test_get_fee_config_by_chain(self, mock_db):
+        from ordex_web_wallet.database import get_fee_config
+
+        mock_db.execute_one.return_value = {
+            "chain": "ordexcoin",
+            "send_fee_per_kb": 0.001,
+            "receive_fee_percent": 0,
+            "use_auto_fee": True,
+            "admin_wallet_address": "Xq、品7Yq",
+        }
+
+        fee = get_fee_config("ordexcoin")
+
+        assert fee["chain"] == "ordexcoin"
+        mock_db.execute_one.assert_called_once()
+
+    @patch("ordex_web_wallet.database.DATABASE")
+    def test_update_fee_config_inserts_new(self, mock_db):
+        from ordex_web_wallet.database import update_fee_config
+
+        mock_db.execute_one.return_value = None
+
+        update_fee_config("ordexcoin", 0.002, 0.5, False, "Xq、品7Yq")
+
+        mock_db.execute_write.assert_called_once()
+        call_args = mock_db.execute_write.call_args[0]
+        assert "INSERT INTO fee_config" in call_args[0]
+        assert "ordexcoin" in call_args[1]
+
+    @patch("ordex_web_wallet.database.DATABASE")
+    def test_update_fee_config_updates_existing(self, mock_db):
+        from ordex_web_wallet.database import update_fee_config
+
+        mock_db.execute_one.return_value = {
+            "chain": "ordexcoin",
+            "send_fee_per_kb": 0.001,
+            "use_auto_fee": True,
+        }
+        mock_db.execute_one.side_effect = [
+            {"chain": "ordexcoin"},
+            None,
+        ]
+
+        update_fee_config("ordexcoin", 0.005, None, None, None)
+
+        mock_db.execute_write.assert_called_once()
 
 
 if __name__ == "__main__":

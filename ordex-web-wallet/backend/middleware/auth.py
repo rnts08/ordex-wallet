@@ -7,8 +7,8 @@ from typing import Optional
 from ordex_web_wallet.database import get_session, clean_expired_sessions
 
 
-def get_current_user_id() -> Optional[int]:
-    return getattr(g, "user_id", None)
+def get_current_user_guid() -> Optional[str]:
+    return getattr(g, "user_guid", None)
 
 
 def get_current_user() -> Optional[dict]:
@@ -31,7 +31,7 @@ def require_auth(f):
         if not session:
             return jsonify({"error": "Invalid or expired session"}), 401
 
-        g.user_id = session["user_id"]
+        g.user_guid = session["user_guid"]
         g.user = session
         return f(*args, **kwargs)
 
@@ -62,6 +62,7 @@ def create_session_token() -> str:
 
 def create_session_expiry(duration: int = None) -> datetime:
     from ordex_web_wallet.config import config
+    from datetime import timezone
 
     duration = duration or config.SESSION_DURATION
-    return datetime.utcnow() + timedelta(seconds=duration)
+    return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=duration)
